@@ -38,3 +38,15 @@ public class RestService {
         return "Che bello";    	
     }    
 }
+
+/*
+ * http://jersey.java.net/nonav/documentation/snapshot/jaxrs-resources.html
+ * 
+@POST 
+@Path("/postdata3") 
+@Consumes("multipart/mixed") 
+@Produces("application/json") 
+public String postData3(@Multipart(value = "testItem1", type = "application/json") TestItem t1, 
+    @Multipart(value = "testItem2", type = "application/json") TestItem t2 
+    ); 
+§*/
