@@ -15,12 +15,14 @@ import javax.ws.rs.core.UriInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Path(RestService.REST_SERVICE_URL)
 public class RestService {
     private static final Logger logger = LoggerFactory.getLogger(RestService.class);
 
-    public static final String REST_SERVICE_URL = "/lar";
+    public static final String REST_SERVICE_URL = "/multiply";
 
-    @Path("/multiply")
+    // /lar/services/multiply/execute
+    @Path("/execute")
     @POST
     @Consumes({ MediaType.APPLICATION_FORM_URLENCODED })
     @Produces({ MediaType.APPLICATION_JSON })
@@ -33,7 +35,6 @@ public class RestService {
     @GET
     @Produces({ MediaType.APPLICATION_JSON })
     public String doTest() {
-
         return "Che bello";    	
     }    
 }

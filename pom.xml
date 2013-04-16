@@ -11,7 +11,14 @@
 		<name>Sonatype OSS Snapshots Repository</name>
 		<url>http://oss.sonatype.org/content/groups/public</url>
 	</repository>
-  </repositories>  
+  </repositories>
+  <pluginRepositories>
+	<pluginRepository>
+		<id>sonatype</id>
+		<name>Sonatype OSS Snapshots Repository</name>
+		<url>http://oss.sonatype.org/content/groups/public</url>
+	</pluginRepository>
+  </pluginRepositories>
   <dependencies>
     	<dependency>
     		<groupId>javax.servlet</groupId>
@@ -32,25 +39,34 @@
         <dependency>
 			<groupId>com.nativelibs4java</groupId>
 			<artifactId>javacl</artifactId>
-			<version>1.0-SNAPSHOT</version>
-		</dependency>	           
+			<version>1.0.0-RC3</version>
+		</dependency>           
   </dependencies>
   <build>
          <plugins>
             <plugin>
                 <groupId>org.mortbay.jetty</groupId>
                 <artifactId>maven-jetty-plugin</artifactId>
-		    <configuration>
-	                <scanIntervalSeconds>10</scanIntervalSeconds>
-	                <stopKey>foo</stopKey>
-	                <stopPort>9966</stopPort>
-                  <connectors>
-                    <connector implementation="org.mortbay.jetty.nio.SelectChannelConnector">
-                      <port>9090</port>
-                      <maxIdleTime>60000</maxIdleTime>
-                    </connector>
-                  </connectors>
-		    </configuration>
+			    <configuration>
+					<scanIntervalSeconds>10</scanIntervalSeconds>
+					<stopKey>foo</stopKey>
+					<stopPort>9966</stopPort>
+					<connectors>
+						<connector implementation="org.mortbay.jetty.nio.SelectChannelConnector">
+							<port>9090</port>
+							<maxIdleTime>60000</maxIdleTime>
+	                    </connector>
+					</connectors>
+				<!--  -->
+    			<systemProperties>
+
+					<systemProperty>
+						<name>jetty.logs</name>
+						<value>${basedir}/target</value>
+					</systemProperty>
+
+				</systemProperties>				
+			    </configuration>
             </plugin>
         </plugins>
   </build>  
