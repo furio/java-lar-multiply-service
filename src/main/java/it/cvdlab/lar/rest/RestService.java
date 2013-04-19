@@ -28,7 +28,7 @@ public class RestService {
     @Produces({ MediaType.APPLICATION_JSON })
     public CsrMatrix doMultiply(@Context UriInfo uriInfo, MultivaluedMap<String, String> form) {
 
-        return new CsrMatrix();    	
+        return new CsrMatrix(new int[]{0,1,2}, new int[]{0,1}, 2, 2);    	
     }
     
     @Path("/test")
@@ -36,7 +36,14 @@ public class RestService {
     @Produces({ MediaType.APPLICATION_JSON })
     public String doTest() {
         return "Che bello";    	
-    }    
+    }
+    
+    @Path("/testMatrix")
+    @GET
+    @Produces({ MediaType.APPLICATION_JSON })
+    public CsrMatrix doTestMatrix() {
+    	return new CsrMatrix(new int[]{0,1,2}, new int[]{0,1}, 2, 2);    	
+    }
 }
 
 /*

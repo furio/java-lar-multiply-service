@@ -40,7 +40,12 @@
 			<groupId>com.nativelibs4java</groupId>
 			<artifactId>javacl</artifactId>
 			<version>1.0.0-RC3</version>
-		</dependency>           
+		</dependency>
+		<dependency>
+    		<groupId>com.google.guava</groupId>
+    		<artifactId>guava</artifactId>
+    		<version>14.0.1</version>
+		</dependency>
   </dependencies>
   <build>
          <plugins>
