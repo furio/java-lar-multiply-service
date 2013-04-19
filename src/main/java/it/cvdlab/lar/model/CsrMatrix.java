@@ -39,6 +39,12 @@ public class CsrMatrix {
 	
 	public CsrMatrix(int rowPtr[], int[] colData, int rowshape, int colshape) {
 		this( rowPtr, colData, binarydataInit(colData.length, 1F) , rowshape, colshape);
+	}
+	
+	private static float[] binarydataInit(int length, float initValue) {
+		float[] arr = new float[length];
+		Arrays.fill(arr, initValue);
+		return arr;
 	}	
 	
 	@JsonIgnore
@@ -94,7 +100,7 @@ public class CsrMatrix {
 		
 		transposeHelper(count_nnz, n, newPtr);
 		
-		// Copia TrowPtr in moda tale che count_nnz[i] == location in Tind, Tval
+		// Copia TrowPtr in modo tale che count_nnz[i] == location in Tind, Tval
 		for(i = 0; i < n; i++) {
 			count_nnz[i] = newPtr[i];
 		}
@@ -124,7 +130,65 @@ public class CsrMatrix {
 		for (int i = 1; i <= maxN; i++) {
 			output[i] = output[i - 1] + input[i - 1];
 		}
+	}
+	
+	@JsonIgnore
+	public CsrMatrix multiply(CsrMatrix matrix) throws Exception {
+		if (this.getColshape() != matrix.getRowshape()) {
+			throw new Exception("Current matrix columns are different from argument matrix rows");
+		}
+
+		CsrMatrix argMatrix = matrix.transpose();
+	    float[] denseResult = new float[(this.getRowshape() * matrix.getColshape())];
+
+	    for (int i = 0; i < this.getRowshape(); i++) {
+			for (int j = 0; j < argMatrix.getRowshape(); j++) {
+
+				int ArowCur = this.getRowptr().get(i),
+					ArowEnd = this.getRowptr().get(i + 1),
+					curPosA = ArowCur;
+
+				int BrowCur = argMatrix.getRowptr().get(j),
+					BrowEnd = argMatrix.getRowptr().get(j + 1),
+					curPosB = BrowCur;
+
+				int AcurIdx = this.getColdata().get(ArowCur),
+					BcurIdx = argMatrix.getColdata().get(BrowCur);
+
+	            float localSum = 0F;
+
+	            while ((curPosA < ArowEnd) && (curPosB < BrowEnd)) {
+					AcurIdx = this.getColdata().get(curPosA);
+					BcurIdx = argMatrix.getColdata().get(curPosB);
+
+					if (AcurIdx == BcurIdx) {
+						localSum += this.getData().get(curPosA) * argMatrix.getData().get(curPosB);
+						curPosA++;
+						curPosB++;
+					} else if (AcurIdx < BcurIdx) {
+						curPosA++;
+					} else {
+						curPosB++;
+					}
+				}
+
+				denseResult[i*matrix.getColshape() + j] = localSum;
+			}
+		}
+
+		return fromFlattenArray(denseResult, matrix.getColshape());		
 	}	
+	
+	// For compatibility with JS code
+	@JsonIgnore
+	public int getRowCount() {
+		return getRowshape();
+	}
+	@JsonIgnore
+	public int getColCount() {
+		return getColshape();
+	}
+	// ------------------------------
 	
 	public List<Integer> getRowptr() {
 		return rowptr;
@@ -155,7 +219,7 @@ public class CsrMatrix {
 	}
 	public void setColshape(int colshape) {
 		this.colshape = colshape;
-	}
+	}	
 	
 	@Override
 	public int hashCode() {
@@ -222,7 +286,7 @@ public class CsrMatrix {
 				prevRow = rowCount;
 			}
 
-			if ( input[i] != 0 ) {
+			if ( input[i] != 0F ) {
 				cols.add( colIdx );
 				data.add( input[i] );
 				nnz += 1;
@@ -232,14 +296,10 @@ public class CsrMatrix {
 				colIdx = -1;
 				rowCount += 1;
 			}
-		}		
+		}
+		
+		rowPtr.add( data.size() );
 		
 		return new CsrMatrix(rowPtr, cols, data, rowPtr.size() - 1, columns);
-	}
-	
-	private static float[] binarydataInit(int length, float initValue) {
-		float[] arr = new float[length];
-		Arrays.fill(arr, initValue);
-		return arr;
 	}
 }
