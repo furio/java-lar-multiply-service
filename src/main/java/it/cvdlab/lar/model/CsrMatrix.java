@@ -1,6 +1,5 @@
 package it.cvdlab.lar.model;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -62,77 +61,69 @@ public class CsrMatrix {
 			for(int k = this.getRowptr().get(i); k < this.getRowptr().get(i+1); k++) {
 				curRow.set( this.getColdata().get(k), this.getData().get(k) );
 			}
-			returnMatrix.set(i, new ArrayList<Float>(curRow) );
+			returnMatrix.add( new ArrayList<Float>(curRow) );
 		}
 		
 		return returnMatrix;
 	}
 	
 	@JsonIgnore
-	public CsrMatrix transpose() {
-		// TODO: refactor from JS
-		/*
+	public CsrMatrix transpose() {		
+		// lookup
+		int m = this.getRowshape();
+		int n = this.getColshape();
+		int base = 0;
 
-	// private function
-	var f_transposeEnum = function(inputArray, maxN, outputArray) {
-		if (maxN === 0) {
+		// NNZ elements
+		int nnz = this.getRowptr().get(m) - base;
+
+		// New arrays
+		int[] newPtr = new int[n + 1];
+		int[] newCol = new int[nnz];
+		float[] newData = new float[nnz];
+		// Create and initialize to 0
+		int[] count_nnz = new int[n];
+
+		// Reused index
+		int i = 0;
+
+		// Count nnz per column
+		for(i = 0; i < nnz; i++) {
+			count_nnz[(this.getColdata().get(i) - base)]++;
+		}
+		
+		transposeHelper(count_nnz, n, newPtr);
+		
+		// Copia TrowPtr in moda tale che count_nnz[i] == location in Tind, Tval
+		for(i = 0; i < n; i++) {
+			count_nnz[i] = newPtr[i];
+		}
+		
+		// Copia i valori in posizione
+		for(i = 0; i < m; i++) {
+			int k;
+			for (k = (this.getRowptr().get(i) - base); k < (this.getRowptr().get(i+1) - base); k++ ) {
+				int j = this.getColdata().get(k) - base;
+				int l = count_nnz[j];
+
+				newCol[l] = i;
+				newData[l] = this.getData().get(k);
+				count_nnz[j]++;
+			}
+		}		
+		
+		return new CsrMatrix(newPtr, newCol, newData, n, m);
+	}
+	
+	private static void transposeHelper(int[] input, int maxN, int[] output) {
+		if (maxN == 0) {
 			return;
 		}
 
-		outputArray[0] = 0;
-		for (var i = 1; i <= maxN; i++) {
-			outputArray[i] = outputArray[i - 1] + inputArray[i - 1];
+		output[0] = 0;
+		for (int i = 1; i <= maxN; i++) {
+			output[i] = output[i - 1] + input[i - 1];
 		}
-	};
-
-	// lookup
-	var m = this.getRowCount();
-	var n = this.getColCount();
-	var base = this.baseIndex;
-
-	// NNZ elements
-	var nnz = this.getRowPointer()[m] - base;
-
-	// New arrays
-	var newPtr = new Array(n + 1);
-	var newCol = new Array(nnz);
-	var newData = new Array(nnz);
-	// Create and initialize to 0
-	var count_nnz = newFilledArray(n, 0);
-
-	// Reused index
-	var i = 0;
-
-	// Count nnz per column
-	for(i = 0; i < nnz; i++) {
-		count_nnz[(this.getColumnIndices()[i] - base)]++;
-	}
-
-	// Create the new rowPtr
-	f_transposeEnum(count_nnz, n, newPtr);
-
-	// Copia TrowPtr in moda tale che count_nnz[i] == location in Tind, Tval
-	for(i = 0; i < n; i++) {
-		count_nnz[i] = newPtr[i];
-	}
-
-	// Copia i valori in posizione
-	for(i = 0; i < m; i++) {
-		var k;
-		for (k = (this.getRowPointer()[i] - base); k < (this.getRowPointer()[i+1] - base); k++ ) {
-			var j = this.getColumnIndices()[k] - base;
-			var l = count_nnz[j];
-
-			newCol[l] = i;
-			newData[l] = this.getData()[k];
-			count_nnz[j]++;
-		}
-	}
-
-	return new csr_matrix({"numrows": n, "numcols": m, "rowptr": newPtr, "colindices": newCol, "data": newData});
-
-		 */
-		return null;
 	}	
 	
 	public List<Integer> getRowptr() {
