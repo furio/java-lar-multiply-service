@@ -17,7 +17,8 @@ import org.slf4j.LoggerFactory;
 
 @Path(RestService.REST_SERVICE_URL)
 public class RestService {
-    private static final Logger logger = LoggerFactory.getLogger(RestService.class);
+    @SuppressWarnings("unused")
+	private static final Logger logger = LoggerFactory.getLogger(RestService.class);
 
     public static final String REST_SERVICE_URL = "/multiply";
 
