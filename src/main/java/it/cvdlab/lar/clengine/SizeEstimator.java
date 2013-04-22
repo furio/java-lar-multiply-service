@@ -3,6 +3,7 @@ package it.cvdlab.lar.clengine;
 import it.cvdlab.lar.utils.FactorList;
 import it.cvdlab.lar.utils.PrimeSieve;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -16,8 +17,8 @@ import com.google.common.primitives.Ints;
 public class SizeEstimator {
 	private static final Logger logger = LoggerFactory.getLogger(SizeEstimator.class);
 	
-	private static final int MINIMUM_DIVISORS = 20;
-	private static final int MAXIMUM_TRIES = 2;
+	private static final int MINIMUM_DIVISORS = 2;
+	private static final int MAXIMUM_TRIES = 20;
 	
 	private static int[] getGoodSingleSize(final int bound, final int maxBound, int minimumDivisors, int maximumTries) throws Exception {
 		// To filter divisor list
@@ -75,14 +76,5 @@ public class SizeEstimator {
 		int[] newY = getGoodSingleSize(sizeY, maxSqrt);
 		
 		return Lists.newArrayList(new int[]{newX[0], newY[0]}, new int[]{newX[1], newY[1]});
-	}
-	
-	public static void main(String[] args) {
-		try {
-			System.out.println( getGoodSizes(1000,900,1024) );
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 	}
 }

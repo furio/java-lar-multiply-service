@@ -40,7 +40,7 @@ public class FactorList {
 		
 		return ArrayUtils.toPrimitive(factors.toArray(new Integer[0]));
 	}
-	
+
 	private static int[] getFactorsLong(int nInput) {
 		if (nInput < 1) {
 			return new int[]{};
