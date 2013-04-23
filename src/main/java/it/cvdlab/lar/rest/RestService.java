@@ -2,6 +2,8 @@ package it.cvdlab.lar.rest;
 
 import it.cvdlab.lar.model.CsrMatrix;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -17,11 +19,17 @@ import org.slf4j.LoggerFactory;
 
 @Path(RestService.REST_SERVICE_URL)
 public class RestService {
-    @SuppressWarnings("unused")
+    @Context
+    private HttpServletRequest httpServletRequest;
+    @Context
+    private HttpServletResponse httpServletResponse;
+    @Context
+    private UriInfo uriInfo;
+    
 	private static final Logger logger = LoggerFactory.getLogger(RestService.class);
     public static final String REST_SERVICE_URL = "/multiply";
     
-    // private @Context UriInfo uriInfo;
+    // httpServletResponse.addHeader("Access-Control-Allow-Origin", "*");
 
     // /lar/services/multiply/execute
     @Path("/execute")
