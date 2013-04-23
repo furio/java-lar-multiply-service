@@ -16,9 +16,11 @@ import com.nativelibs4java.opencl.CLBuffer;
 import com.nativelibs4java.opencl.CLContext;
 import com.nativelibs4java.opencl.CLDevice;
 import com.nativelibs4java.opencl.CLEvent;
+import com.nativelibs4java.opencl.CLException;
 import com.nativelibs4java.opencl.CLKernel;
 import com.nativelibs4java.opencl.CLMem;
 import com.nativelibs4java.opencl.CLMem.Usage;
+import com.nativelibs4java.opencl.CLPlatform.DeviceFeature;
 import com.nativelibs4java.opencl.CLProgram;
 import com.nativelibs4java.opencl.CLQueue;
 import com.nativelibs4java.opencl.JavaCL;
@@ -36,8 +38,8 @@ public class MultiplyCL {
 		List<CLMem> buffersRelease = Lists.newArrayList();
 
 		// Context
-		// CLContext context = JavaCL.createBestContext(DeviceFeature.GPU);
-		CLContext context = JavaCL.createBestContext();
+		CLContext context = JavaCL.createBestContext(DeviceFeature.GPU);
+		// CLContext context = JavaCL.createBestContext();
 		
 		// WorkGroupSize
 		long maxWorkGroupSize = Long.MAX_VALUE;
@@ -76,35 +78,47 @@ public class MultiplyCL {
         
         
         // CLBuffers
-        CLBuffer<Integer> cl_matA_rowptr, cl_matA_colindices, cl_matB_rowptr, cl_matB_colindices;
+        CLBuffer<Integer> cl_matA_rowptr = null, cl_matA_colindices = null, cl_matB_rowptr = null, cl_matB_colindices = null;
         CLBuffer<Float> cl_matA_data = null, cl_matB_data = null;
+        CLBuffer<Float> cl_output_data = null;
         
-        cl_matA_rowptr = context.createBuffer(Usage.Input, matA_rowptr);
-        buffersRelease.add(cl_matA_rowptr);
-        cl_matA_colindices = context.createBuffer(Usage.Input, matA_colindices);
-        buffersRelease.add(cl_matA_colindices);
-        cl_matB_rowptr = context.createBuffer(Usage.Input, matB_rowptr);
-        buffersRelease.add(cl_matB_rowptr);
-        cl_matB_colindices = context.createBuffer(Usage.Input, matB_colindices);
-        buffersRelease.add(cl_matB_colindices);
-        if (!isBinary) {
-        	cl_matA_data = context.createBuffer(Usage.Input, matA_data);
-        	buffersRelease.add(cl_matA_data);
-        	cl_matB_data = context.createBuffer(Usage.Input, matB_data);
-        	buffersRelease.add(cl_matB_data);
+        try {
+            cl_matA_rowptr = context.createBuffer(Usage.Input, matA_rowptr);
+            buffersRelease.add(cl_matA_rowptr);
+            cl_matA_colindices = context.createBuffer(Usage.Input, matA_colindices);
+            buffersRelease.add(cl_matA_colindices);
+            cl_matB_rowptr = context.createBuffer(Usage.Input, matB_rowptr);
+            buffersRelease.add(cl_matB_rowptr);
+            cl_matB_colindices = context.createBuffer(Usage.Input, matB_colindices);
+            buffersRelease.add(cl_matB_colindices);
+            if (!isBinary) {
+            	cl_matA_data = context.createBuffer(Usage.Input, matA_data);
+            	buffersRelease.add(cl_matA_data);
+            	cl_matB_data = context.createBuffer(Usage.Input, matB_data);
+            	buffersRelease.add(cl_matB_data);
+            }
+            
+            // Output buffer
+            cl_output_data = context.createFloatBuffer(Usage.Output, matrixA.getRowCount()*matrixBToTranspose.getColCount());
+            buffersRelease.add(cl_output_data);
+        } catch (CLException e) {
+			queue.release();
+			clearAllocatedCLObjects(buffersRelease);
+			
+			logger.error(e.toString());
+			return null;        	
         }
-        
-        // Output buffer
-        CLBuffer<Float> cl_output_data = context.createFloatBuffer(Usage.Output, matrixA.getRowCount()*matrixBToTranspose.getColCount());
-        buffersRelease.add(cl_output_data);
+
 
         // Read the program sources and compile them :
         String kernelSource = null;
 		try {
 			kernelSource = IOUtils.readText(MultiplyCL.class.getResource("SpMSpM-Multiply-Naive.cl"));
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			queue.release();
+			clearAllocatedCLObjects(buffersRelease);
+			
+			logger.error(e.toString());
 			return null;
 		}
     	kernelSource = kernelSource.replaceAll("%%AROW%%", Integer.toString( matrixA.getRowCount() ) );
@@ -147,7 +161,7 @@ public class MultiplyCL {
 			return null;
 		}
 
-        queue.finish();
+        // queue.finish();
         CLEvent addEvt = multiplyMatrixKernel.enqueueNDRange(queue, niceSizes.get(0), niceSizes.get(1));
         
        
@@ -189,17 +203,15 @@ public class MultiplyCL {
 		listOfObjects.clear();
 	}
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		int[] matrixOne = new int[]{1,0,0,0,1,0,1,0,0,0,0,0,0,0,1,0,0,1,1,0};
 		int[] matrixTwo = new int[]{1,0,0,1,0,1,0,0,0,0,0,1,0,0,0,1,1,1,0,1};
 		CsrMatrix csrMatrixOne = CsrMatrix.fromFlattenArray(matrixOne, 5);
 		CsrMatrix csrMatrixTwo = CsrMatrix.fromFlattenArray(matrixTwo, 4);
 		
-		System.out.println(csrMatrixOne);
-		System.out.println(csrMatrixTwo);
-		System.out.println(csrMatrixTwo.transpose());
-		
 		CsrMatrix result = multiply(csrMatrixOne, csrMatrixTwo);
+		System.out.println(result);
+		System.out.println(csrMatrixOne.multiply(csrMatrixTwo));
 	}
 }
 

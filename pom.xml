@@ -56,12 +56,14 @@
 					<scanIntervalSeconds>10</scanIntervalSeconds>
 					<stopKey>foo</stopKey>
 					<stopPort>9966</stopPort>
+					<!-- 
 					<connectors>
 						<connector implementation="org.mortbay.jetty.nio.SelectChannelConnector">
 							<port>9090</port>
 							<maxIdleTime>60000</maxIdleTime>
 	                    </connector>
 					</connectors>
+					 -->
 				<!--  -->
     			<systemProperties>
 
@@ -69,6 +71,10 @@
 						<name>jetty.logs</name>
 						<value>${basedir}/target</value>
 					</systemProperty>
+					<systemProperty>
+						<name>jetty.port</name>
+						<value>9090</value>
+					</systemProperty>					
 
 				</systemProperties>				
 			    </configuration>

@@ -3,6 +3,7 @@ package it.cvdlab.lar.rest;
 import it.cvdlab.lar.model.CsrMatrix;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -19,8 +20,9 @@ import org.slf4j.LoggerFactory;
 public class RestService {
     @SuppressWarnings("unused")
 	private static final Logger logger = LoggerFactory.getLogger(RestService.class);
-
     public static final String REST_SERVICE_URL = "/multiply";
+    
+    // private @Context UriInfo uriInfo;
 
     // /lar/services/multiply/execute
     @Path("/execute")
@@ -31,6 +33,18 @@ public class RestService {
 
         return new CsrMatrix(new int[]{0,1,2}, new int[]{0,1}, 2, 2);    	
     }
+    
+    @Path("/executeTest")
+    @POST
+    @Consumes({ MediaType.APPLICATION_FORM_URLENCODED })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public CsrMatrix doMultiplyTest(@FormParam("matrixA") CsrMatrix t1, 
+    		@FormParam("matrixB") CsrMatrix t2 ) {
+
+    	System.out.println(t1);
+    	System.out.println(t2);
+        return new CsrMatrix(new int[]{0,1,2}, new int[]{0,1}, 2, 2);    	
+    }    
     
     @Path("/test")
     @GET
