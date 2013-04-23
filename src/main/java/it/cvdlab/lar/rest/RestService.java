@@ -3,7 +3,6 @@ package it.cvdlab.lar.rest;
 import it.cvdlab.lar.model.CsrMatrix;
 
 import javax.ws.rs.Consumes;
-import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -30,7 +29,7 @@ public class RestService {
     @Consumes({ MediaType.APPLICATION_FORM_URLENCODED })
     @Produces({ MediaType.APPLICATION_JSON })
     public CsrMatrix doMultiply(@Context UriInfo uriInfo, MultivaluedMap<String, String> form) {
-
+    	logger.error("/execute");
         return new CsrMatrix(new int[]{0,1,2}, new int[]{0,1}, 2, 2);    	
     }
     
@@ -51,6 +50,7 @@ public class RestService {
     @GET
     @Produces({ MediaType.APPLICATION_JSON })
     public String doTest() {
+    	logger.error("/test");
         return (new CsrMatrix(new int[]{0,1,2}, new int[]{0,1}, 2, 2)).toDense().toString();    	
     }
     
@@ -58,6 +58,7 @@ public class RestService {
     @GET
     @Produces({ MediaType.APPLICATION_JSON })
     public CsrMatrix doTestMatrix() {
+    	logger.error("/testMatrix");
     	return new CsrMatrix(new int[]{0,1,2}, new int[]{0,1}, 2, 2);    	
     }
 }

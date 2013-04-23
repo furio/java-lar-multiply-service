@@ -66,7 +66,6 @@
 					 -->
 				<!--  -->
     			<systemProperties>
-
 					<systemProperty>
 						<name>jetty.logs</name>
 						<value>${basedir}/target</value>
@@ -74,7 +73,15 @@
 					<systemProperty>
 						<name>jetty.port</name>
 						<value>9090</value>
-					</systemProperty>					
+					</systemProperty>
+					<systemProperty>
+						<name>log4j.configuration</name>
+						<value>file:./target/classes/log4j.properties</value>
+					</systemProperty>	
+					<systemProperty>
+						<name>slf4j</name>
+						<value>false</value>
+					</systemProperty>			
 
 				</systemProperties>				
 			    </configuration>
