@@ -68,6 +68,8 @@ __kernel void spmm_binary_kernel_naive(
 	
 	int AcurIdx = -1;
 	int BcurIdx = -1;
+	
+	// printf("(%d,%d): raS: %d raE: %d rbS: %d rbE: %d\n", currRow, currCol, ArowCur, ArowEnd, BrowCur, BrowEnd);
 
 	float localSum = 0;
 

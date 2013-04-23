@@ -3,7 +3,6 @@ package it.cvdlab.lar.clengine;
 import it.cvdlab.lar.utils.FactorList;
 import it.cvdlab.lar.utils.PrimeSieve;
 
-import java.util.Arrays;
 import java.util.List;
 
 import org.slf4j.Logger;

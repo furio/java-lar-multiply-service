@@ -34,7 +34,7 @@ public class CsrMatrix {
 	}
 	
 	public CsrMatrix(int rowPtr[], int[] colData, float[] data, int rowshape, int colshape) {
-		this( Ints.asList(rowPtr), Ints.asList(colData), Floats.asList( data ), colshape, colshape);
+		this( Ints.asList(rowPtr), Ints.asList(colData), Floats.asList( data ), rowshape, colshape);
 	}
 	
 	public CsrMatrix(int rowPtr[], int[] colData, int rowshape, int colshape) {
@@ -269,6 +269,15 @@ public class CsrMatrix {
 		return "CsrMatrix [rowptr=" + rowptr + ", coldata=" + coldata
 				+ ", data=" + data + ", rowshape=" + rowshape + ", colshape="
 				+ colshape + "]";
+	}
+	
+	public static CsrMatrix fromFlattenArray(int[] input, int columns) {	
+		float[] fInput = new float[input.length];
+		for(int i = 0; i < input.length; i++) {
+			fInput[i] = input[i];
+		}
+		
+		return fromFlattenArray(fInput,columns);
 	}
 	
 	public static CsrMatrix fromFlattenArray(float[] input, int columns) {		
