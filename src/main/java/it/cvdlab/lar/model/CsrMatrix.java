@@ -25,6 +25,8 @@ public class CsrMatrix {
 	@JsonProperty("COLCOUNT")
 	private int colshape;
 	
+	public CsrMatrix() {}
+	
 	public CsrMatrix(List<Integer> rowPtr, List<Integer> colData, List<Float> data, int rowshape, int colshape) {
 		this.rowptr = ImmutableList.copyOf( rowPtr );
 		this.coldata = ImmutableList.copyOf( colData );
