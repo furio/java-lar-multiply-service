@@ -26,6 +26,11 @@
     		<version>3.0.1</version>
     		<scope>provided</scope>
     	</dependency>
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-servlets</artifactId>
+			<version>8.1.10.v20130312</version>
+		</dependency>    	
         <dependency>
             <groupId>org.apache.wink</groupId>
             <artifactId>wink-server</artifactId>
@@ -51,20 +56,13 @@
          <plugins>
             <plugin>
                 <groupId>org.mortbay.jetty</groupId>
-                <artifactId>maven-jetty-plugin</artifactId>
+                <!--  <artifactId>maven-jetty-plugin</artifactId> -->
+                <artifactId>jetty-maven-plugin</artifactId>
 			    <configuration>
 					<scanIntervalSeconds>10</scanIntervalSeconds>
 					<stopKey>foo</stopKey>
 					<stopPort>9966</stopPort>
-					<!-- 
-					<connectors>
-						<connector implementation="org.mortbay.jetty.nio.SelectChannelConnector">
-							<port>9090</port>
-							<maxIdleTime>60000</maxIdleTime>
-	                    </connector>
-					</connectors>
-					 -->
-				<!--  -->
+
     			<systemProperties>
 					<systemProperty>
 						<name>jetty.logs</name>
@@ -78,10 +76,16 @@
 						<name>log4j.configuration</name>
 						<value>file:./target/classes/log4j.properties</value>
 					</systemProperty>	
+					<!-- 
 					<systemProperty>
-						<name>slf4j</name>
-						<value>false</value>
-					</systemProperty>			
+						<name>org.mortbay.jetty.Request.maxFormContentSize</name>
+						<value>2000000000</value>
+					</systemProperty>	
+					 -->
+					<systemProperty>
+						<name>org.eclipse.jetty.server.Request.maxFormContentSize</name>
+						<value>2000000000</value>
+					</systemProperty>					 
 
 				</systemProperties>				
 			    </configuration>

@@ -10,7 +10,7 @@
 <web-app>
 	<display-name>Rest Multiply Service</display-name>
 	<description>Rest Multiply Service</description>
-
+	
     <servlet>
         <servlet-name>default</servlet-name>
         <init-param>
@@ -44,14 +44,14 @@
 		<url-pattern>/admin</url-pattern>
 	</servlet-mapping>
 	
-	<!-- 
-    <filter>
-        <filter-name>cross-origin</filter-name>
-        <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
-    </filter>
-    <filter-mapping>
-        <filter-name>cross-origin</filter-name>
-        <url-pattern>/*</url-pattern>
-    </filter-mapping>
-     -->
+
+     <filter>
+         <filter-name>cross-origin</filter-name>
+         <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
+     </filter>
+     <filter-mapping>
+         <filter-name>cross-origin</filter-name>
+         <url-pattern>/services/*</url-pattern>
+     </filter-mapping>
+    
 </web-app>

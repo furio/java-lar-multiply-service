@@ -2,9 +2,6 @@ package it.cvdlab.lar.rest;
 
 import java.io.IOException;
 
-import it.cvdlab.lar.clengine.MultiplyCL;
-import it.cvdlab.lar.model.CsrMatrix;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.Consumes;
@@ -22,6 +19,9 @@ import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import it.cvdlab.lar.model.CsrMatrix;
+import it.cvdlab.lar.clengine.MultiplyCL;
 
 @Path(RestService.REST_SERVICE_URL)
 public class RestService {
@@ -49,7 +49,7 @@ public class RestService {
     @Consumes({ MediaType.APPLICATION_FORM_URLENCODED })
     @Produces({ MediaType.APPLICATION_JSON })
     public CsrMatrix doMultiply(@Context UriInfo uriInfo, MultivaluedMap<String, String> form) {
-    	httpServletResponse.addHeader("Access-Control-Allow-Origin", "*");
+    	// httpServletResponse.addHeader("Access-Control-Allow-Origin", "*");
     	
     	CsrMatrix firstMatrix = null;
     	CsrMatrix secondMatrix = null;
@@ -99,7 +99,7 @@ public class RestService {
     @GET
     @Produces({ MediaType.APPLICATION_JSON })
     public String doTest() {
-    	httpServletResponse.addHeader("Access-Control-Allow-Origin", "*");
+    	// httpServletResponse.addHeader("Access-Control-Allow-Origin", "*");
 
         return (new CsrMatrix(new int[]{0,1,2}, new int[]{0,1}, 2, 2)).toDense().toString();    	
     }
