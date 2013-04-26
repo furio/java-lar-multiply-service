@@ -56,7 +56,7 @@ public class RestService {
     	boolean firstParse = false;
     	boolean secondParse = false;
     	
-    	System.err.println(form.toString());
+    	// System.err.println(form.toString());
     	
     	if ( form.containsKey(MATRIX_FIRST_PARAM) ) {
     		try {
@@ -95,6 +95,33 @@ public class RestService {
         return resultMatrix;    	
     }
     
+    @Path("/serialize")
+    @POST
+    @Consumes({ MediaType.APPLICATION_FORM_URLENCODED })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public CsrMatrix doSerialize(@Context UriInfo uriInfo, MultivaluedMap<String, String> form) {
+    	CsrMatrix firstMatrix = null;
+    	CsrMatrix secondMatrix = null;
+    	
+    	System.err.println(form.toString());
+    	
+    	if ( form.containsKey(MATRIX_FIRST_PARAM) ) {
+    		try {
+    			firstMatrix = jacksonMapper.readValue(form.getFirst(MATRIX_FIRST_PARAM), CsrMatrix.class);
+			} catch (JsonParseException e) {
+				System.err.println( e.toString() );
+			} catch (JsonMappingException e) {
+				System.err.println( e.toString() );
+			} catch (IOException e) {
+				System.err.println( e.toString() );
+			}
+    	}
+    	
+    	System.err.println(firstMatrix.isBinary());
+    	
+    	return firstMatrix;
+    }
+    
     @Path("/networktest")
     @GET
     @Produces({ MediaType.APPLICATION_JSON })
@@ -103,6 +130,15 @@ public class RestService {
 
         return (new CsrMatrix(new int[]{0,1,2}, new int[]{0,1}, 2, 2)).toDense().toString();    	
     }
+    
+    @Path("/networkcsrtest")
+    @GET
+    @Produces({ MediaType.APPLICATION_JSON })
+    public CsrMatrix doCsrTest() {
+    	// httpServletResponse.addHeader("Access-Control-Allow-Origin", "*");
+
+        return (new CsrMatrix(new int[]{0,1,2}, new int[]{0,1}, 2, 2));    	
+    }    
 }
 
 /*

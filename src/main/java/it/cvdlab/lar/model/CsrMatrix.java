@@ -24,6 +24,8 @@ public class CsrMatrix {
 	private int rowshape;
 	@JsonProperty("COLCOUNT")
 	private int colshape;
+	@JsonIgnore
+	private static final int BASEINDEX = 0;
 	
 	public CsrMatrix() {}
 	
@@ -51,8 +53,8 @@ public class CsrMatrix {
 	
 	@JsonIgnore
 	public boolean isBinary() {
-		for(Float currData: data) {
-			if ((currData != 0F) && (currData != 1F)) {
+		for(Float currData: this.getData()) {
+			if (currData != 1F) {
 				return false;
 			}
 		}
@@ -80,7 +82,7 @@ public class CsrMatrix {
 		// lookup
 		int m = this.getRowshape();
 		int n = this.getColshape();
-		int base = 0;
+		int base = BASEINDEX;
 
 		// NNZ elements
 		int nnz = this.getRowptr().get(m) - base;
@@ -204,7 +206,12 @@ public class CsrMatrix {
 	public void setColdata(List<Integer> coldata) {
 		this.coldata = coldata;
 	}
-	public List<Float> getData() {
+	public synchronized List<Float> getData() {
+		// Lazy init
+		if (this.data == null) {
+			this.data = ImmutableList.copyOf( Floats.asList( binarydataInit(this.getColdata().size(), 1F) ) );
+		}
+		
 		return data;
 	}
 	public void setData(List<Float> data) {
