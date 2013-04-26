@@ -7,6 +7,8 @@ import java.util.List;
 
 import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.annotate.JsonProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -26,6 +28,8 @@ public class CsrMatrix {
 	private int colshape;
 	@JsonIgnore
 	private static final int BASEINDEX = 0;
+	@JsonIgnore
+	private static final Logger logger = LoggerFactory.getLogger(CsrMatrix.class);
 	
 	public CsrMatrix() {}
 	
@@ -183,16 +187,52 @@ public class CsrMatrix {
 		return fromFlattenArray(denseResult, matrix.getColshape());		
 	}	
 	
-	// For compatibility with JS code
 	@JsonIgnore
-	public int getRowCount() {
-		return getRowshape();
+	public CsrMatrix getRowPiece(int i, int j, int length) throws Exception {
+		if ((i < 1) || (j < 1) || (length < 1)) {
+			throw new Exception("Parameters must be > 1");
+		}
+
+		if (this.getRowptr().size() < 2) {
+			throw new Exception("Matrix is not valid");
+		}
+
+		if (i > this.getRowCount()) {
+			throw new Exception("Row index cannot be > RowCount");
+		}
+
+		if (j > this.getColCount()) {
+			throw new Exception("Col index cannot be > ColCount");
+		}
+
+		if (length > (this.getColCount() - j + 1)) {
+			logger.debug("Warning: out of the bound of the matrix, padded with 0");
+		}
+
+		List<Integer> tmp_col = Lists.newArrayList();
+		List<Float> tmp_data = Lists.newArrayList();
+
+		if (this.getNonZeroElementsCount() > 0) {
+			// Matrix is valid so getRowPointer ever has an element in position [i-1]
+			int ptr = this.getRowPointer().get(i - 1);
+			int end_ptr = this.getRowPointer().get(i);
+
+			int column = this.getColumnIndices().get(ptr) + 1;
+
+			while ((ptr < end_ptr) && (column < (j + length))) {
+				
+				if (column > (j - 1)) {
+					tmp_col.add(column - j);
+					tmp_data.add(this.getData().get(ptr));
+				}
+
+				ptr++;
+				column = this.getColumnIndices().get(ptr) + 1;
+			}
+		}
+		
+		return new CsrMatrix(Ints.asList(new int[]{0,length}), tmp_col, tmp_data, 1, length);
 	}
-	@JsonIgnore
-	public int getColCount() {
-		return getColshape();
-	}
-	// ------------------------------
 	
 	public List<Integer> getRowptr() {
 		return rowptr;
@@ -229,6 +269,29 @@ public class CsrMatrix {
 	public void setColshape(int colshape) {
 		this.colshape = colshape;
 	}	
+	
+	// For compatibility with JS code
+	@JsonIgnore
+	public int getRowCount() {
+		return getRowshape();
+	}
+	@JsonIgnore
+	public int getColCount() {
+		return getColshape();
+	}
+	@JsonIgnore
+	public int getNonZeroElementsCount() {
+		return this.getData().size();
+	}
+	@JsonIgnore
+	public List<Integer> getRowPointer() {
+		return this.getRowptr();
+	}
+	@JsonIgnore
+	public List<Integer> getColumnIndices() {
+		return this.getColdata();
+	}
+	// ------------------------------
 	
 	@Override
 	public int hashCode() {

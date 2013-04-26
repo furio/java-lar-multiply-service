@@ -1,5 +1,8 @@
 package it.cvdlab.lar.rest;
 
+import it.cvdlab.lar.clengine.MultiplyCL;
+import it.cvdlab.lar.model.CsrMatrix;
+
 import java.io.IOException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -19,9 +22,6 @@ import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import it.cvdlab.lar.model.CsrMatrix;
-import it.cvdlab.lar.clengine.MultiplyCL;
 
 @Path(RestService.REST_SERVICE_URL)
 public class RestService {
@@ -101,7 +101,6 @@ public class RestService {
     @Produces({ MediaType.APPLICATION_JSON })
     public CsrMatrix doSerialize(@Context UriInfo uriInfo, MultivaluedMap<String, String> form) {
     	CsrMatrix firstMatrix = null;
-    	CsrMatrix secondMatrix = null;
     	
     	System.err.println(form.toString());
     	
