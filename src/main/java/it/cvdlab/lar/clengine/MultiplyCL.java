@@ -212,6 +212,9 @@ public class MultiplyCL {
 		CsrMatrix result = multiply(csrMatrixOne, csrMatrixTwo);
 		System.out.println(result);
 		System.out.println(csrMatrixOne.multiply(csrMatrixTwo));
+		CsrMatrix.USE_SPARSE_MULTIPLY = !CsrMatrix.USE_SPARSE_MULTIPLY;
+		System.out.println(csrMatrixOne.multiply(csrMatrixTwo));
+		CsrMatrix.USE_SPARSE_MULTIPLY = !CsrMatrix.USE_SPARSE_MULTIPLY;
 	}
 }
 

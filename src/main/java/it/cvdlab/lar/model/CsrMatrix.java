@@ -29,6 +29,8 @@ public class CsrMatrix {
 	@JsonIgnore
 	private static final int BASEINDEX = 0;
 	@JsonIgnore
+	public static boolean USE_SPARSE_MULTIPLY = false;	
+	@JsonIgnore
 	private static final Logger logger = LoggerFactory.getLogger(CsrMatrix.class);
 	
 	public CsrMatrix() {}
@@ -47,12 +49,6 @@ public class CsrMatrix {
 	
 	public CsrMatrix(int rowPtr[], int[] colData, int rowshape, int colshape) {
 		this( rowPtr, colData, binarydataInit(colData.length, 1F) , rowshape, colshape);
-	}
-	
-	private static float[] binarydataInit(int length, float initValue) {
-		float[] arr = new float[length];
-		Arrays.fill(arr, initValue);
-		return arr;
 	}	
 	
 	@JsonIgnore
@@ -146,6 +142,114 @@ public class CsrMatrix {
 			throw new Exception("Current matrix columns are different from argument matrix rows");
 		}
 
+		if ( USE_SPARSE_MULTIPLY ) {
+			return this.sparseMultiply(matrix);
+		} else {
+			return this.denseMultiply(matrix);
+		}
+		
+	}
+	
+	@JsonIgnore
+	private CsrMatrix sparseMultiply(CsrMatrix matrix) {
+		int i,j,k,l,count,countJD;
+		int[] JD = new int[matrix.getColCount()];
+		
+		int[] tmp_rowptr, tmp_coldata;
+		float[] tmp_data;
+		int tmp_rowcount = this.getRowCount(),
+				tmp_colcount = matrix.getColCount();
+		
+		// Init JD
+		for (i=0; i < tmp_colcount; ++i) {
+			JD[i] = -1;
+		}
+		
+		// Init rowPtr
+		tmp_rowptr = new int[tmp_rowcount + 1];
+		
+		// Calculate rowPtr
+		for(i = 0; i < tmp_rowcount; ++i) {
+			count = 0; 
+
+			for (k = this.getRowPointer().get(i); k < this.getRowPointer().get(i + 1); ++k) {
+				for (j = matrix.getRowPointer().get( this.getColdata().get(k) ); j < matrix.getRowPointer().get( this.getColdata().get(k) + 1 ); ++j) {
+					for (l=0; l<count; l++) {
+						if ( JD[l] == matrix.getColdata().get(j) ) {
+							break;
+						}
+					}
+
+					if ( l == count ) {
+						JD[count] = matrix.getColdata().get(j);
+						count++;
+					}
+				}
+			}
+
+			tmp_rowptr[i+1] = count;
+			for (j=0; j < count; ++j) {
+				JD[j] = -1;
+			}
+		}
+		
+		// Finally set
+		for ( i = 0; i < tmp_rowcount; ++i) { 
+			tmp_rowptr[i+1] += tmp_rowptr[i];
+		}
+		
+		// Init tmpColData
+		tmp_coldata = new int[tmp_rowptr[tmp_rowcount]];
+		
+		// These fors have a bug, at the first step inverts some column indexes
+		// need to be debugged
+		for (i=0; i < tmp_rowcount; ++i) {
+			countJD = 0;
+			count = tmp_rowptr[i];
+			for ( k = this.getRowPointer().get(i); k < this.getRowPointer().get(i + 1); ++k) {
+				for ( j = matrix.getRowPointer().get( this.getColdata().get(k) ); j < matrix.getRowPointer().get( this.getColdata().get(k) + 1 ); ++j) {
+					for ( l=0; l<countJD; l++) {
+						if ( JD[l] == matrix.getColdata().get(j) ) {
+							break;
+						}
+					}
+
+					if ( l == countJD ) {
+						tmp_coldata[count] = matrix.getColdata().get(j);
+						JD[countJD] = matrix.getColdata().get(j);
+						count++;
+						countJD++;
+					}
+				}
+			}
+
+			for ( j=0; j < countJD; ++j) {
+				JD[j] = -1;
+			}
+		}
+		
+		// Init data
+		tmp_data = new float[tmp_rowptr[tmp_rowcount]];
+		
+		for (i=0; i < tmp_rowcount; ++i) {
+			for (j = tmp_rowptr[i]; j < tmp_rowptr[i + 1]; ++j) {
+				tmp_data[j] = 0;
+				for ( k = this.getRowPointer().get(i); k < this.getRowPointer().get(i+1); ++k) {
+					for ( l = matrix.getRowPointer().get( this.getColdata().get(k) ); l < matrix.getRowPointer().get( this.getColdata().get(k) + 1 ); l++) {
+						if ( matrix.getColdata().get(l) == tmp_coldata[j] ) {
+							tmp_data[j] += this.getData().get(k) * matrix.getData().get(l);
+						} // end if
+					} // end for l
+				} // end for k
+			} // end for j
+		} // end for i
+  		
+		
+		return new CsrMatrix(tmp_rowptr, tmp_coldata, tmp_data, tmp_rowcount, tmp_colcount);
+	}
+
+	@JsonIgnore
+	private CsrMatrix denseMultiply(CsrMatrix matrix) {
 		CsrMatrix argMatrix = matrix.transpose();
 	    float[] denseResult = new float[(this.getRowshape() * matrix.getColshape())];
 
@@ -382,5 +486,11 @@ public class CsrMatrix {
 		rowPtr.add( data.size() );
 		
 		return new CsrMatrix(rowPtr, cols, data, rowPtr.size() - 1, columns);
+	}
+	
+	private static float[] binarydataInit(int length, float initValue) {
+		float[] arr = new float[length];
+		Arrays.fill(arr, initValue);
+		return arr;
 	}
 }
