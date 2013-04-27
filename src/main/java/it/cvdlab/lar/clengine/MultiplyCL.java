@@ -208,9 +208,12 @@ public class MultiplyCL {
 		int[] matrixTwo = new int[]{1,0,0,1,0,1,0,0,0,0,0,1,0,0,0,1,1,1,0,1};
 		CsrMatrix csrMatrixOne = CsrMatrix.fromFlattenArray(matrixOne, 5);
 		CsrMatrix csrMatrixTwo = CsrMatrix.fromFlattenArray(matrixTwo, 4);
+		System.out.println(csrMatrixOne);
+		System.out.println(csrMatrixTwo);
+		System.out.println("==========");
 		
-		CsrMatrix result = multiply(csrMatrixOne, csrMatrixTwo);
-		System.out.println(result);
+		// CsrMatrix result = multiply(csrMatrixOne, csrMatrixTwo);
+		// System.out.println(result);
 		System.out.println(csrMatrixOne.multiply(csrMatrixTwo));
 		CsrMatrix.USE_SPARSE_MULTIPLY = !CsrMatrix.USE_SPARSE_MULTIPLY;
 		System.out.println(csrMatrixOne.multiply(csrMatrixTwo));

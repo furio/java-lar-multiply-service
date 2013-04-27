@@ -213,19 +213,25 @@ public class CsrMatrix {
 							break;
 						}
 					}
-
+					System.err.println("j:" + j + "("+matrix.getColdata().get(j)+") - l: " + l + " - countJD: " + countJD + " - count: " + count);
+					System.err.println(Arrays.toString(JD));
 					if ( l == countJD ) {
 						tmp_coldata[count] = matrix.getColdata().get(j);
 						JD[countJD] = matrix.getColdata().get(j);
 						count++;
 						countJD++;
 					}
+					System.err.println("j:" + j + "("+matrix.getColdata().get(j)+") - l: " + l + " - countJD: " + countJD + " - count: " + count);
+					System.err.println(Arrays.toString(JD));
+					System.err.println("---");
 				}
 			}
 
 			for ( j=0; j < countJD; ++j) {
 				JD[j] = -1;
 			}
+			
+			System.err.println("==");
 		}
 		
 		// Init data
