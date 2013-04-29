@@ -29,7 +29,7 @@ public class CsrMatrix {
 	@JsonIgnore
 	private static final int BASEINDEX = 0;
 	@JsonIgnore
-	public static boolean USE_SPARSE_MULTIPLY = false;	
+	private static final boolean USE_SPARSE_MULTIPLY = false;	
 	@JsonIgnore
 	private static final Logger logger = LoggerFactory.getLogger(CsrMatrix.class);
 	
@@ -151,6 +151,61 @@ public class CsrMatrix {
 	}
 	
 	@JsonIgnore
+	public int nnzMultiplyCount(CsrMatrix matrix) throws Exception {
+		if (this.getColshape() != matrix.getRowshape()) {
+			throw new Exception("Current matrix columns are different from argument matrix rows");
+		}
+		
+		int i,j,k,l,count;
+		int[] JD = new int[matrix.getColCount()];
+		
+		int[] tmp_rowptr;
+		float[] tmp_data;
+		int tmp_rowcount = this.getRowCount(),
+				tmp_colcount = matrix.getColCount();
+		
+		// Init JD
+		for (i=0; i < tmp_colcount; ++i) {
+			JD[i] = -1;
+		}
+		
+		// Init rowPtr
+		tmp_rowptr = new int[tmp_rowcount + 1];
+		
+		// Calculate rowPtr
+		for(i = 0; i < tmp_rowcount; ++i) {
+			count = 0; 
+
+			for (k = this.getRowPointer().get(i); k < this.getRowPointer().get(i + 1); ++k) {
+				for (j = matrix.getRowPointer().get( this.getColdata().get(k) ); j < matrix.getRowPointer().get( this.getColdata().get(k) + 1 ); ++j) {
+					for (l=0; l<count; l++) {
+						if ( JD[l] == matrix.getColdata().get(j) ) {
+							break;
+						}
+					}
+
+					if ( l == count ) {
+						JD[count] = matrix.getColdata().get(j);
+						count++;
+					}
+				}
+			}
+
+			tmp_rowptr[i+1] = count;
+			for (j=0; j < count; ++j) {
+				JD[j] = -1;
+			}
+		}
+		
+		// Finally set
+		for ( i = 0; i < tmp_rowcount; ++i) { 
+			tmp_rowptr[i+1] += tmp_rowptr[i];
+		}
+		
+		return tmp_rowptr[tmp_rowcount];
+	}
+	
+	@JsonIgnore
 	private CsrMatrix sparseMultiply(CsrMatrix matrix) {
 		int i,j,k,l,count,countJD;
 		int[] JD = new int[matrix.getColCount()];
@@ -213,17 +268,18 @@ public class CsrMatrix {
 							break;
 						}
 					}
-					System.err.println("j:" + j + "("+matrix.getColdata().get(j)+") - l: " + l + " - countJD: " + countJD + " - count: " + count);
-					System.err.println(Arrays.toString(JD));
+//					System.err.println("j:" + j + "("+matrix.getColdata().get(j)+") - l: " + l + " - countJD: " + countJD + " - count: " + count);
+//					System.err.println(Arrays.toString(JD));
 					if ( l == countJD ) {
 						tmp_coldata[count] = matrix.getColdata().get(j);
 						JD[countJD] = matrix.getColdata().get(j);
 						count++;
 						countJD++;
 					}
-					System.err.println("j:" + j + "("+matrix.getColdata().get(j)+") - l: " + l + " - countJD: " + countJD + " - count: " + count);
-					System.err.println(Arrays.toString(JD));
-					System.err.println("---");
+					
+//					System.err.println("j:" + j + "("+matrix.getColdata().get(j)+") - l: " + l + " - countJD: " + countJD + " - count: " + count);
+//					System.err.println(Arrays.toString(JD));
+//					System.err.println("---");
 				}
 			}
 
@@ -231,7 +287,7 @@ public class CsrMatrix {
 				JD[j] = -1;
 			}
 			
-			System.err.println("==");
+//			System.err.println("==");
 		}
 		
 		// Init data
