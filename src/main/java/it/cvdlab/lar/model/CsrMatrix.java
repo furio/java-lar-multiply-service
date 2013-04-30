@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.TreeSet;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.annotate.JsonProperty;
 import org.slf4j.Logger;
@@ -557,21 +558,28 @@ public class CsrMatrix {
 	}
 	
 	@JsonIgnore
+	public static CsrMatrix fromCOOArray(List<Float> cooArray, int rowshape, int colshape) {
+		return fromCOOArray(ArrayUtils.toPrimitive( cooArray.toArray(new Float[0]) ), rowshape, colshape); 
+	}
+	
+	@JsonIgnore
 	public static CsrMatrix fromCOOArray(float[] cooArray, int rowshape, int colshape) {
 		int nnz = cooArray.length / 3;
 		
-		System.out.println("NNZ: " + nnz);
-		System.out.println("ROWSHAPE: " + rowshape);
-		
 		List<Integer> rowptr = Lists.newArrayList(Collections.nCopies(rowshape+1, 0));
 		List<Integer> colIndex = Lists.newArrayList();
-		List<Integer> data = Lists.newArrayListWithExpectedSize(nnz);
+		List<Float> data = null;
 		
-		Map<Integer,NavigableSet<Integer>> columnsData = Maps.newHashMap(); 
+		//
+		Map<Integer,NavigableSet<Integer>> columnsData = Maps.newHashMap();
+		
+		//
+		int currRow, currCol;
+		float currData;
 		
 		for(int i = 0; i < nnz; i++) {
-			int currRow = (int)cooArray[i*3 + 0];
-			int currCol = (int)cooArray[i*3 + 1];
+			currRow = (int)cooArray[i*3 + 0];
+			currCol = (int)cooArray[i*3 + 1];
 			
 			rowptr.set( currRow + 1, rowptr.get(currRow + 1) + 1 );
 			for (int j = currRow + 2; j < rowptr.size(); j++) {
@@ -591,10 +599,24 @@ public class CsrMatrix {
 			}
 		}
 		
-		System.out.println(rowptr);
-		System.out.println(colIndex);
+		data = Lists.newArrayList(Collections.nCopies(colIndex.size(), 0F));
 		
-		return null;
+		for(int i = 0; i < nnz; i++) {
+			currRow = (int)cooArray[i*3 + 0];
+			currCol = (int)cooArray[i*3 + 1];
+			currData = (int)cooArray[i*3 + 2];
+			
+			int startIndex = rowptr.get(currRow);
+			int stopIndex = rowptr.get(currRow + 1);
+			
+			for (int j = startIndex; j < stopIndex; j++) {
+				if (colIndex.get(j) == currCol) {
+					data.set(j, currData);
+				}
+			}
+		}
+		
+		return new CsrMatrix(rowptr,colIndex,data,rowshape,colshape);
 	}
 	
 	@JsonIgnore

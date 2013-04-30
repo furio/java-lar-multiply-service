@@ -28,9 +28,25 @@ import com.nativelibs4java.util.IOUtils;
 
 public class MultiplyCL {
 	private static final Logger logger = LoggerFactory.getLogger(MultiplyCL.class);
+	private static final int NNZ_WEIGHT = 3;
 	
 	public static synchronized CsrMatrix multiply(CsrMatrix matrixA, CsrMatrix matrixB) {
-		return clMultiply(matrixA, matrixB);
+		// First calculate NNZ elements!! This is necessary!
+		int nnzCount = -1;
+		
+		try {
+			nnzCount = matrixA.nnzMultiplyCount(matrixB);
+			System.out.println("NNZCount: " + nnzCount );
+		} catch (Exception e1) {
+			logger.error(e1.toString());
+			return null; 
+		}		
+		
+		if ((matrixA.getRowCount() * matrixB.getColCount()) > ( nnzCount * NNZ_WEIGHT )) {
+			return clMultiplyCOO(matrixA, matrixB, nnzCount);
+		} else {
+			return clMultiply(matrixA, matrixB);
+		}
 	}
 	
 	private static CsrMatrix clMultiply(CsrMatrix matrixA, CsrMatrix matrixBToTranspose) {
@@ -181,20 +197,7 @@ public class MultiplyCL {
 		return CsrMatrix.fromFlattenArray(ArrayUtils.toPrimitive( listMatrixOut.toArray(new Float[0]) ), matrixBToTranspose.getColCount());
 	}
 	
-	public static void clMultiplyCOO(CsrMatrix matrixA, CsrMatrix matrixBToTranspose) {
-		// First calculate NNZ elements!! This is necessary!
-		int nnzCount = -1;
-		
-		
-		try {
-			nnzCount = matrixA.nnzMultiplyCount(matrixBToTranspose);
-			System.out.println("NNZCount: " + nnzCount );
-		} catch (Exception e1) {
-			logger.error(e1.toString());
-			return; 
-		}
-		
-		
+	public static CsrMatrix clMultiplyCOO(CsrMatrix matrixA, CsrMatrix matrixBToTranspose, int nnzCount) {
 		// Lista di CL buffer da deallocare
 		List<CLMem> buffersRelease = Lists.newArrayList();
 
@@ -271,7 +274,7 @@ public class MultiplyCL {
 			clearAllocatedCLObjects(buffersRelease);
 			
 			logger.error(e.toString());
-			return;    	
+			return null;    	
         }
 
 
@@ -284,7 +287,7 @@ public class MultiplyCL {
 			clearAllocatedCLObjects(buffersRelease);
 			
 			logger.error(e.toString());
-			return;
+			return null;
 		}
     	kernelSource = kernelSource.replaceAll("%%AROW%%", Integer.toString( matrixA.getRowCount() ) );
     	kernelSource = kernelSource.replaceAll("%%BCOL%%", Integer.toString( matrixB.getRowCount() ) );
@@ -325,7 +328,7 @@ public class MultiplyCL {
 			clearAllocatedCLObjects(buffersRelease);
 			
 			logger.error(e.toString());
-			return;
+			return null;
 		}
 
         // queue.finish();
@@ -342,10 +345,8 @@ public class MultiplyCL {
 		multiplyMatrixKernel.release();
 		program.release();
 		clearAllocatedCLObjects(buffersRelease);
-        
-		System.out.println(listMatrixOut);
 		
-		return; // CsrMatrix.fromFlattenArray(ArrayUtils.toPrimitive( listMatrixOut.toArray(new Float[0]) ), matrixBToTranspose.getColCount());
+		return CsrMatrix.fromCOOArray(listMatrixOut, matrixA.getRowshape(), matrixBToTranspose.getColshape());
 	}	
 	
 	
@@ -382,7 +383,6 @@ public class MultiplyCL {
 //		CsrMatrix result = multiply(csrMatrixOne, csrMatrixTwo);
 //		System.out.println(result);
 		System.out.println(csrMatrixOne.multiply(csrMatrixTwo));
-		System.out.println(csrMatrixOne.multiply(csrMatrixTwo).toDense());
 //		System.out.println(csrMatrixOne.transpose());
 		System.out.println("==========");
 		
@@ -397,7 +397,10 @@ public class MultiplyCL {
 										0, 3, 2, 
 										2, 3, 1, 
 										3, 3, 2};
-		CsrMatrix.fromCOOArray(ccoOutput, csrMatrixOne.getRowshape(), csrMatrixTwo.getColshape());
+		
+		System.out.println(
+				CsrMatrix.fromCOOArray(ccoOutput, csrMatrixOne.getRowshape(), csrMatrixTwo.getColshape())
+				);
 	}
 }
 
