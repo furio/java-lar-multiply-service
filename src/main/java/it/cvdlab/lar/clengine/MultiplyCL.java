@@ -382,7 +382,9 @@ public class MultiplyCL {
 //		CsrMatrix result = multiply(csrMatrixOne, csrMatrixTwo);
 //		System.out.println(result);
 		System.out.println(csrMatrixOne.multiply(csrMatrixTwo));
+		System.out.println(csrMatrixOne.multiply(csrMatrixTwo).toDense());
 //		System.out.println(csrMatrixOne.transpose());
+		System.out.println("==========");
 		
 //		clMultiplyCOO(csrMatrixOne, csrMatrixTwo);
 //		System.out.println(csrMatrixOne.multiply(csrMatrixTwo));

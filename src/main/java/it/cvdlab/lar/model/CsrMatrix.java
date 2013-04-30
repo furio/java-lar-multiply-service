@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.NavigableSet;
+import java.util.TreeSet;
 
 import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.annotate.JsonProperty;
@@ -12,6 +15,8 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.common.primitives.Floats;
 import com.google.common.primitives.Ints;
 
@@ -559,37 +564,31 @@ public class CsrMatrix {
 		System.out.println("ROWSHAPE: " + rowshape);
 		
 		List<Integer> rowptr = Lists.newArrayList(Collections.nCopies(rowshape+1, 0));
-		List<Integer> colIndex = Lists.newArrayList(Collections.nCopies(nnz, -1));
+		List<Integer> colIndex = Lists.newArrayList();
 		List<Integer> data = Lists.newArrayListWithExpectedSize(nnz);
+		
+		Map<Integer,NavigableSet<Integer>> columnsData = Maps.newHashMap(); 
 		
 		for(int i = 0; i < nnz; i++) {
 			int currRow = (int)cooArray[i*3 + 0];
 			int currCol = (int)cooArray[i*3 + 1];
-			int currData = (int)cooArray[i*3 + 2];
-
-			int colIndicesStart = rowptr.get(currRow);
-			
 			
 			rowptr.set( currRow + 1, rowptr.get(currRow + 1) + 1 );
 			for (int j = currRow + 2; j < rowptr.size(); j++) {
 				rowptr.set( j, rowptr.get(j) + 1 );
 			}
 			
-			int colIndicesEnd = rowptr.get(currRow + 1);
-			
-			System.out.println(colIndicesStart + "-" + colIndicesEnd);
-			
-			for(int z = colIndicesStart; colIndicesStart < colIndicesEnd; z++) {
-				// System.out.println(z);
-				if (colIndex.get(z) == -1 ) {
-					colIndex.set(z, currCol);
-				} else if ( colIndex.get(z) > currCol ) {
-					colIndex.add(z, currCol);
-				}
+			if (columnsData.get(currRow) == null) {
+				columnsData.put(currRow, new TreeSet<Integer>());
 			}
 			
-			System.out.println(colIndex);
-			
+			columnsData.get(currRow).add(currCol);
+		}
+		
+		for(int i = 0; i < rowshape; i++) {
+			if (columnsData.get(i) != null) {
+				colIndex.addAll( Lists.newArrayList( columnsData.get(i).iterator() ) );
+			}
 		}
 		
 		System.out.println(rowptr);
