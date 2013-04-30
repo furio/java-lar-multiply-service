@@ -381,11 +381,21 @@ public class MultiplyCL {
 		
 //		CsrMatrix result = multiply(csrMatrixOne, csrMatrixTwo);
 //		System.out.println(result);
-//		System.out.println(csrMatrixOne.multiply(csrMatrixTwo));
+		System.out.println(csrMatrixOne.multiply(csrMatrixTwo));
 //		System.out.println(csrMatrixOne.transpose());
 		
-		clMultiplyCOO(csrMatrixOne, csrMatrixTwo);
-		System.out.println(csrMatrixOne.multiply(csrMatrixTwo));
+//		clMultiplyCOO(csrMatrixOne, csrMatrixTwo);
+//		System.out.println(csrMatrixOne.multiply(csrMatrixTwo));
+		
+		float[] ccoOutput = new float[]{0, 0, 2, 
+										2, 0, 1, 
+										0, 1, 1, 
+										1, 1, 1, 
+										2, 1, 1, 
+										0, 3, 2, 
+										2, 3, 1, 
+										3, 3, 2};
+		CsrMatrix.fromCOOArray(ccoOutput, csrMatrixOne.getRowshape(), csrMatrixTwo.getColshape());
 	}
 }
 

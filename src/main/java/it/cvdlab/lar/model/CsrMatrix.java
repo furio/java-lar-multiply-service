@@ -160,7 +160,6 @@ public class CsrMatrix {
 		int[] JD = new int[matrix.getColCount()];
 		
 		int[] tmp_rowptr;
-		float[] tmp_data;
 		int tmp_rowcount = this.getRowCount(),
 				tmp_colcount = matrix.getColCount();
 		
@@ -509,6 +508,7 @@ public class CsrMatrix {
 				+ colshape + "]";
 	}
 	
+	@JsonIgnore
 	public static CsrMatrix fromFlattenArray(int[] input, int columns) {	
 		float[] fInput = new float[input.length];
 		for(int i = 0; i < input.length; i++) {
@@ -518,6 +518,7 @@ public class CsrMatrix {
 		return fromFlattenArray(fInput,columns);
 	}
 	
+	@JsonIgnore
 	public static CsrMatrix fromFlattenArray(float[] input, int columns) {		
 		List<Integer> rowPtr = Lists.newArrayList();
 		List<Integer> cols = Lists.newArrayList();
@@ -550,6 +551,54 @@ public class CsrMatrix {
 		return new CsrMatrix(rowPtr, cols, data, rowPtr.size() - 1, columns);
 	}
 	
+	@JsonIgnore
+	public static CsrMatrix fromCOOArray(float[] cooArray, int rowshape, int colshape) {
+		int nnz = cooArray.length / 3;
+		
+		System.out.println("NNZ: " + nnz);
+		System.out.println("ROWSHAPE: " + rowshape);
+		
+		List<Integer> rowptr = Lists.newArrayList(Collections.nCopies(rowshape+1, 0));
+		List<Integer> colIndex = Lists.newArrayList(Collections.nCopies(nnz, -1));
+		List<Integer> data = Lists.newArrayListWithExpectedSize(nnz);
+		
+		for(int i = 0; i < nnz; i++) {
+			int currRow = (int)cooArray[i*3 + 0];
+			int currCol = (int)cooArray[i*3 + 1];
+			int currData = (int)cooArray[i*3 + 2];
+
+			int colIndicesStart = rowptr.get(currRow);
+			
+			
+			rowptr.set( currRow + 1, rowptr.get(currRow + 1) + 1 );
+			for (int j = currRow + 2; j < rowptr.size(); j++) {
+				rowptr.set( j, rowptr.get(j) + 1 );
+			}
+			
+			int colIndicesEnd = rowptr.get(currRow + 1);
+			
+			System.out.println(colIndicesStart + "-" + colIndicesEnd);
+			
+			for(int z = colIndicesStart; colIndicesStart < colIndicesEnd; z++) {
+				// System.out.println(z);
+				if (colIndex.get(z) == -1 ) {
+					colIndex.set(z, currCol);
+				} else if ( colIndex.get(z) > currCol ) {
+					colIndex.add(z, currCol);
+				}
+			}
+			
+			System.out.println(colIndex);
+			
+		}
+		
+		System.out.println(rowptr);
+		System.out.println(colIndex);
+		
+		return null;
+	}
+	
+	@JsonIgnore
 	private static float[] binarydataInit(int length, float initValue) {
 		float[] arr = new float[length];
 		Arrays.fill(arr, initValue);
