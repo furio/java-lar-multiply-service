@@ -28,7 +28,7 @@ import com.nativelibs4java.util.IOUtils;
 
 public class MultiplyCL {
 	private static final Logger logger = LoggerFactory.getLogger(MultiplyCL.class);
-	private static final int NNZ_WEIGHT = 3;
+	private static final int NNZ_WEIGHT = 1;
 	
 	public static synchronized CsrMatrix multiply(CsrMatrix matrixA, CsrMatrix matrixB) {
 		// First calculate NNZ elements!! This is necessary!
@@ -36,15 +36,17 @@ public class MultiplyCL {
 		
 		try {
 			nnzCount = matrixA.nnzMultiplyCount(matrixB);
-			System.out.println("NNZCount: " + nnzCount );
+			logger.info("NNZCount: " + nnzCount );
 		} catch (Exception e1) {
 			logger.error(e1.toString());
 			return null; 
 		}		
 		
 		if ((matrixA.getRowCount() * matrixB.getColCount()) > ( nnzCount * NNZ_WEIGHT )) {
+			logger.info("COO Way");
 			return clMultiplyCOO(matrixA, matrixB, nnzCount);
 		} else {
+			System.out.println("Dense Way");
 			return clMultiply(matrixA, matrixB);
 		}
 	}
@@ -380,8 +382,8 @@ public class MultiplyCL {
 		System.out.println(csrMatrixTwo);
 		System.out.println("==========");
 		
-//		CsrMatrix result = multiply(csrMatrixOne, csrMatrixTwo);
-//		System.out.println(result);
+		CsrMatrix result = multiply(csrMatrixOne, csrMatrixTwo);
+		System.out.println(result);
 		System.out.println(csrMatrixOne.multiply(csrMatrixTwo));
 //		System.out.println(csrMatrixOne.transpose());
 		System.out.println("==========");
@@ -389,18 +391,18 @@ public class MultiplyCL {
 //		clMultiplyCOO(csrMatrixOne, csrMatrixTwo);
 //		System.out.println(csrMatrixOne.multiply(csrMatrixTwo));
 		
-		float[] ccoOutput = new float[]{0, 0, 2, 
-										2, 0, 1, 
-										0, 1, 1, 
-										1, 1, 1, 
-										2, 1, 1, 
-										0, 3, 2, 
-										2, 3, 1, 
-										3, 3, 2};
+//		float[] ccoOutput = new float[]{0, 0, 2, 
+//										2, 0, 1, 
+//										0, 1, 1, 
+//										1, 1, 1, 
+//										2, 1, 1, 
+//										0, 3, 2, 
+//										2, 3, 1, 
+//										3, 3, 2};
 		
-		System.out.println(
-				CsrMatrix.fromCOOArray(ccoOutput, csrMatrixOne.getRowshape(), csrMatrixTwo.getColshape())
-				);
+//		System.out.println(
+//				CsrMatrix.fromCOOArray(ccoOutput, csrMatrixOne.getRowshape(), csrMatrixTwo.getColshape())
+//				);
 	}
 }
 
