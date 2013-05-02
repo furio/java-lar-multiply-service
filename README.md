@@ -28,10 +28,10 @@ A simple REST module that performs sparse matrix multiplication through WebCL/We
 
 ## Software Options
 
-You can edit the pom.xml directly or pass arguments to Maven command line (example: `mvn -Dit.cvdlab.lar.clengine.nnzWeight=7 jetty:run`).
+You can edit the pom.xml directly or pass arguments to Maven command line.
 
 ##### jetty.port
-> ( _default: 9090_ )
+> ( _default: 3000_ )
 >
 > REST service port.
 
@@ -69,7 +69,7 @@ You might want to give more RAM (for example 8Gb) to the JVM
 
 ## REST Endpoint
 
-The REST endpoint is (with a proper HTTP POST) **http://HOST:PORT/services/multiply/execute**
+The REST endpoint is (with a proper HTTP POST) http://HOST:PORT/service/APIKEY/multiply
 
 ## License
 
