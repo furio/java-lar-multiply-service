@@ -17,28 +17,53 @@ A simple REST module that performs sparse matrix multiplication through WebCL/We
 
 ## Startup
 
-On Windows:
+###### On Windows:
 1. Enter the repository directory
 2. `mvn jetty:run`
 
-On Linux/MacOsx:
+###### On Linux/MacOsx:
 1. Enter the repository directory
-2. `export LD_PRELOAD=$JAVA_HOME/jre/lib/amd64/libjsig.so` ($JAVA_HOME should point tou your JDK installation directory)
+2. `export LD_PRELOAD=$JAVA_HOME/jre/lib/amd64/libjsig.so` (`$JAVA_HOME` should point to your JDK installation directory)
 3. `mvn jetty:run`
 
-## Options
+## Software Options
 
-You can edit the pom.xml directly or pass arguments to Maven command line
+You can edit the pom.xml directly or pass arguments to Maven command line.
+
+##### jetty.port
+> ( _default: 9090_ )
+>
+> REST service port.
+
+##### org.eclipse.jetty.server.Request.maxFormContentSize
+> ( _default: 2000000000_ )
+>
+> Maximum size of POST body in bytes.
+
+##### it.cvdlab.lar.clengine.nnzWeight
+> ( _default: 1_ )
+>
+> The system calculates `rows * columns` of input matrices and if greater than `nnzWeight * nnz` of results uses COO CL kernel.
+
+##### it.cvdlab.lar.clengine.useCOO
+> ( _default: false_ )
+>
+> Override any possible weight factor and use only the COO CL kernel.
+
+##### it.cvdlab.lar.clengine.noOpenCL
+> ( _default: false_ )
+>
+> Override any possible configuration and let Java compute the result of the matrix multiplication.
 
 ## JVM Options
 
 You might want to give more RAM (for example 8Gb) to the JVM
 
-On Windows:
+###### On Windows:
 1. `set MAVEN_OPTS="-Xmx8192m"`
 2. Execute steps in the "Startup" section
 
-On Linux/MacOsX:
+###### On Linux/MacOsX:
 1. `export MAVEN_OPTS="-Xmx8192m"`
 2. Execute steps in the "Startup" section
 
