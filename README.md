@@ -69,7 +69,7 @@ You might want to give more RAM (for example 8Gb) to the JVM
 
 ## REST Endpoint
 
-The REST endpoint is (with a proper HTTP POST) http://HOST:PORT/service/APIKEY/multiply
+The REST endpoint is (with a proper HTTP POST) http://HOST:PORT/services/multiply/execute
 
 ## License
 
