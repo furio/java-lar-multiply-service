@@ -1,5 +1,57 @@
 java-lar-multiply-service
 =========================
 
-java-cl
-export LD_PRELOAD=/usr/lib/jvm/java-6-sun/jre/lib/amd64/libjsig.so
+A simple REST module that performs sparse matrix multiplication through WebCL/WebGL for the [LAR](https://github.com/cvdlab/larpy)/[LAR.js](https://github.com/cvdlab/lar-demo) project
+
+## Requirements
+
+* OpenCL
+* JDK 1.6 or greater
+* Maven
+
+## Installing
+
+1. Clone this repository
+2. Enter the repository directory
+3. `mvn package`
+
+## Startup
+
+On Windows:
+1. Enter the repository directory
+2. `mvn jetty:run`
+
+On Linux/MacOsx:
+1. Enter the repository directory
+2. `export LD_PRELOAD=$JAVA_HOME/jre/lib/amd64/libjsig.so` ($JAVA_HOME should point tou your JDK installation directory)
+3. `mvn jetty:run`
+
+## Options
+
+You can edit the pom.xml directly or pass arguments to Maven command line
+
+## JVM Options
+
+You might want to give more RAM (for example 8Gb) to the JVM
+
+On Windows:
+1. `set MAVEN_OPTS="-Xmx8192m"`
+2. Execute steps in the "Startup" section
+
+On Linux/MacOsX:
+1. `export MAVEN_OPTS="-Xmx8192m"`
+2. Execute steps in the "Startup" section
+
+## REST Endpoint
+
+The REST endpoint is (with a proper HTTP POST) http://HOST:PORT/service/APIKEY/multiply
+
+## License
+
+(The MIT License)
+
+Copyright (c) 2013 Francesco Furiani
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the 'Software'), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
