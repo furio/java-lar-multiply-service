@@ -27,27 +27,79 @@ import com.nativelibs4java.opencl.JavaCL;
 import com.nativelibs4java.util.IOUtils;
 
 public class MultiplyCL {
+	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(MultiplyCL.class);
-	private static final int NNZ_WEIGHT = 1;
+	
+	// String settings
+    private static final String PROPERTY_NNZWEIGHT = MultiplyCL.class.getPackage().getName()
+            + ".nnzWeight";
+    private static final String PROPERTY_USECOO = MultiplyCL.class.getPackage().getName()
+            + ".useCOO";
+    private static final String PROPERTY_NOCL = MultiplyCL.class.getPackage().getName()
+            + ".noOpenCL";    
+	
+    // 
+	private static int NNZ_WEIGHT = 1;
+	private static boolean USECOO = false;
+	private static boolean NO_OPENCL = false;
+	
+	static {
+		String nnzWeight = System.getProperty(PROPERTY_NNZWEIGHT);
+		String useCOO = System.getProperty(PROPERTY_USECOO);
+		String noOpenCL = System.getProperty(PROPERTY_NOCL);
+		
+		if (nnzWeight != null) {
+			try{
+				int value = Integer.valueOf(nnzWeight);
+				if (value >= 1) {
+					NNZ_WEIGHT = value;
+				}
+			} catch(NumberFormatException e) {
+				
+			}
+		}
+		
+		if (useCOO != null) {
+			USECOO = Boolean.valueOf(useCOO);
+		}
+		
+		if (noOpenCL != null) {
+			NO_OPENCL = Boolean.valueOf(noOpenCL);
+		}			
+	}
 	
 	public static synchronized CsrMatrix multiply(CsrMatrix matrixA, CsrMatrix matrixB) {
+		// Js-like computation
+		if (NO_OPENCL) {
+			return jsMultiply(matrixA, matrixB);
+		}
+		
+		// Go through OpenCL
 		// First calculate NNZ elements!! This is necessary!
 		int nnzCount = -1;
 		
 		try {
 			nnzCount = matrixA.nnzMultiplyCount(matrixB);
 			logger.info("NNZCount: " + nnzCount );
-		} catch (Exception e1) {
-			logger.error(e1.toString());
+		} catch (Exception e) {
+			logger.error(e.toString());
 			return null; 
 		}		
 		
-		if ((matrixA.getRowCount() * matrixB.getColCount()) > ( nnzCount * NNZ_WEIGHT )) {
+		if ( USECOO || ((matrixA.getRowCount() * matrixB.getColCount()) > ( nnzCount * NNZ_WEIGHT )) ) {
 			logger.info("COO Way");
 			return clMultiplyCOO(matrixA, matrixB, nnzCount);
 		} else {
 			System.out.println("Dense Way");
 			return clMultiply(matrixA, matrixB);
+		}
+	}
+	private static CsrMatrix jsMultiply(CsrMatrix matrixA, CsrMatrix matrixBToTranspose) {
+		try {
+			return matrixA.multiply(matrixBToTranspose);
+		} catch (Exception e) {
+			logger.error(e.toString());
+			return null;
 		}
 	}
 	
@@ -198,6 +250,7 @@ public class MultiplyCL {
 		
 		return CsrMatrix.fromFlattenArray(ArrayUtils.toPrimitive( listMatrixOut.toArray(new Float[0]) ), matrixBToTranspose.getColCount());
 	}
+	
 	
 	public static CsrMatrix clMultiplyCOO(CsrMatrix matrixA, CsrMatrix matrixBToTranspose, int nnzCount) {
 		// Lista di CL buffer da deallocare
@@ -373,37 +426,37 @@ public class MultiplyCL {
 		listOfObjects.clear();
 	}
 	
-	public static void main(String[] args) throws Exception {
-		int[] matrixOne = new int[]{1,0,0,0,1,0,1,0,0,0,0,0,0,0,1,0,0,1,1,0};
-		int[] matrixTwo = new int[]{1,0,0,1,0,1,0,0,0,0,0,1,0,0,0,1,1,1,0,1};
-		CsrMatrix csrMatrixOne = CsrMatrix.fromFlattenArray(matrixOne, 5);
-		CsrMatrix csrMatrixTwo = CsrMatrix.fromFlattenArray(matrixTwo, 4);
-		System.out.println(csrMatrixOne);
-		System.out.println(csrMatrixTwo);
-		System.out.println("==========");
-		
-		CsrMatrix result = multiply(csrMatrixOne, csrMatrixTwo);
-		System.out.println(result);
-		System.out.println(csrMatrixOne.multiply(csrMatrixTwo));
-//		System.out.println(csrMatrixOne.transpose());
-		System.out.println("==========");
-		
-//		clMultiplyCOO(csrMatrixOne, csrMatrixTwo);
+//	public static void main(String[] args) throws Exception {
+//		int[] matrixOne = new int[]{1,0,0,0,1,0,1,0,0,0,0,0,0,0,1,0,0,1,1,0};
+//		int[] matrixTwo = new int[]{1,0,0,1,0,1,0,0,0,0,0,1,0,0,0,1,1,1,0,1};
+//		CsrMatrix csrMatrixOne = CsrMatrix.fromFlattenArray(matrixOne, 5);
+//		CsrMatrix csrMatrixTwo = CsrMatrix.fromFlattenArray(matrixTwo, 4);
+//		System.out.println(csrMatrixOne);
+//		System.out.println(csrMatrixTwo);
+//		System.out.println("==========");
+//		
+//		CsrMatrix result = multiply(csrMatrixOne, csrMatrixTwo);
+//		System.out.println(result);
 //		System.out.println(csrMatrixOne.multiply(csrMatrixTwo));
-		
-//		float[] ccoOutput = new float[]{0, 0, 2, 
-//										2, 0, 1, 
-//										0, 1, 1, 
-//										1, 1, 1, 
-//										2, 1, 1, 
-//										0, 3, 2, 
-//										2, 3, 1, 
-//										3, 3, 2};
-		
-//		System.out.println(
-//				CsrMatrix.fromCOOArray(ccoOutput, csrMatrixOne.getRowshape(), csrMatrixTwo.getColshape())
-//				);
-	}
+////		System.out.println(csrMatrixOne.transpose());
+//		System.out.println("==========");
+//		
+////		clMultiplyCOO(csrMatrixOne, csrMatrixTwo);
+////		System.out.println(csrMatrixOne.multiply(csrMatrixTwo));
+//		
+////		float[] ccoOutput = new float[]{0, 0, 2, 
+////										2, 0, 1, 
+////										0, 1, 1, 
+////										1, 1, 1, 
+////										2, 1, 1, 
+////										0, 3, 2, 
+////										2, 3, 1, 
+////										3, 3, 2};
+//		
+////		System.out.println(
+////				CsrMatrix.fromCOOArray(ccoOutput, csrMatrixOne.getRowshape(), csrMatrixTwo.getColshape())
+////				);
+//	}
 }
 
 /*

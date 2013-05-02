@@ -128,16 +128,7 @@ public class RestService {
     	// httpServletResponse.addHeader("Access-Control-Allow-Origin", "*");
 
         return (new CsrMatrix(new int[]{0,1,2}, new int[]{0,1}, 2, 2)).toDense().toString();    	
-    }
-    
-    @Path("/networkcsrtest")
-    @GET
-    @Produces({ MediaType.APPLICATION_JSON })
-    public CsrMatrix doCsrTest() {
-    	// httpServletResponse.addHeader("Access-Control-Allow-Origin", "*");
-
-        return (new CsrMatrix(new int[]{0,1,2}, new int[]{0,1}, 2, 2));    	
-    }    
+    }   
 }
 
 /*

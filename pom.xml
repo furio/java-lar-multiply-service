@@ -51,11 +51,11 @@
     		<artifactId>guava</artifactId>
     		<version>14.0.1</version>
 		</dependency>
-<dependency>
-	<groupId>org.slf4j</groupId>
-	<artifactId>slf4j-log4j12</artifactId>
-	<version>1.7.5</version>
-</dependency>		
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+			<version>1.7.5</version>
+		</dependency>		
   </dependencies>
   <build>
          <plugins>
@@ -75,7 +75,7 @@
 					</systemProperty>
 					<systemProperty>
 						<name>jetty.port</name>
-						<value>9090</value>
+						<value>3000</value>
 					</systemProperty>
 					<systemProperty>
 						<name>log4j.configuration</name>

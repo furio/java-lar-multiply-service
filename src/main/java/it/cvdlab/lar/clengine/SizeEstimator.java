@@ -43,11 +43,11 @@ public class SizeEstimator {
 								Ints.asList( FactorList.getFactors(newX) ), 
 								currFilter ) );
 
-				logger.info(newX + "-" + factorList.size() + "-" + factorList);
+				logger.debug(newX + "-" + factorList.size() + "-" + factorList);
 				// System.out.println(newX + "-" + factorList.size() + "-" + factorList);
 				if ( factorList.size() >= minimumDivisors ) {
 					factorList = Lists.reverse(factorList);
-					logger.info(newX + "- L: " + factorList);
+					logger.debug(newX + "- L: " + factorList);
 					divX = factorList.get(0);
 					return new int[]{newX, divX};
 				}
