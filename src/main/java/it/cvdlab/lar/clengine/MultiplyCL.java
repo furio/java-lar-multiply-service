@@ -36,17 +36,25 @@ public class MultiplyCL {
     private static final String PROPERTY_USECOO = MultiplyCL.class.getPackage().getName()
             + ".useCOO";
     private static final String PROPERTY_NOCL = MultiplyCL.class.getPackage().getName()
-            + ".noOpenCL";    
+            + ".noOpenCL";
+    private static final String PROPERTY_FORCEGPUCX = MultiplyCL.class.getPackage().getName()
+            + ".forceGPU";    
+    private static final String PROPERTY_USEDEVICEMEM = MultiplyCL.class.getPackage().getName()
+            + ".useDeviceMem";        
 	
     // 
 	private static int NNZ_WEIGHT = 3;
 	private static boolean USECOO = false;
 	private static boolean NO_OPENCL = false;
+	private static boolean FORCE_GPU = true;
+	private static boolean USE_DEVICE_MEM = true;
 	
 	static {
 		String nnzWeight = System.getProperty(PROPERTY_NNZWEIGHT);
 		String useCOO = System.getProperty(PROPERTY_USECOO);
 		String noOpenCL = System.getProperty(PROPERTY_NOCL);
+		String forceGPU = System.getProperty(PROPERTY_FORCEGPUCX);
+		String deviceMem = System.getProperty(PROPERTY_USEDEVICEMEM);
 		
 		if (nnzWeight != null) {
 			try{
@@ -65,7 +73,15 @@ public class MultiplyCL {
 		
 		if (noOpenCL != null) {
 			NO_OPENCL = Boolean.valueOf(noOpenCL);
-		}			
+		}
+
+		if (deviceMem != null) {
+			USE_DEVICE_MEM = Boolean.valueOf(deviceMem);
+		}
+		
+		if (forceGPU != null) {
+			FORCE_GPU = Boolean.valueOf(forceGPU);
+		}
 	}
 	
 	public static synchronized CsrMatrix multiply(CsrMatrix matrixA, CsrMatrix matrixB) {
@@ -112,13 +128,17 @@ public class MultiplyCL {
 	private static CsrMatrix clMultiply(CsrMatrix matrixA, CsrMatrix matrixBToTranspose) {
 		// Lista di CL buffer da deallocare
 		List<CLMem> buffersRelease = Lists.newArrayList();
+		@SuppressWarnings("rawtypes")
 		List<Pointer> pointersRelease = Lists.newArrayList();
 		
 		CLContext context = null;
 		
 		try {
-			context = JavaCL.createBestContext(DeviceFeature.GPU);
-//			context = JavaCL.createBestContext();
+			if (FORCE_GPU) {
+				context = JavaCL.createBestContext(DeviceFeature.GPU);
+			} else {
+				context = JavaCL.createBestContext();
+			}	
 		}  catch (CLException e) {
 			clearAllocatedCLObjects(buffersRelease);
 			clearAllocatedPTRObjects(pointersRelease);
@@ -175,18 +195,18 @@ public class MultiplyCL {
         CLBuffer<Float> cl_output_data = null;
         
         try {
-            cl_matA_rowptr = context.createBuffer(Usage.Input, matA_rowptr);
+            cl_matA_rowptr = context.createBuffer(Usage.Input, matA_rowptr, USE_DEVICE_MEM);
             buffersRelease.add(cl_matA_rowptr);
-            cl_matA_colindices = context.createBuffer(Usage.Input, matA_colindices);
+            cl_matA_colindices = context.createBuffer(Usage.Input, matA_colindices, USE_DEVICE_MEM);
             buffersRelease.add(cl_matA_colindices);
-            cl_matB_rowptr = context.createBuffer(Usage.Input, matB_rowptr);
+            cl_matB_rowptr = context.createBuffer(Usage.Input, matB_rowptr, USE_DEVICE_MEM);
             buffersRelease.add(cl_matB_rowptr);
-            cl_matB_colindices = context.createBuffer(Usage.Input, matB_colindices);
+            cl_matB_colindices = context.createBuffer(Usage.Input, matB_colindices, USE_DEVICE_MEM);
             buffersRelease.add(cl_matB_colindices);
             if (!isBinary) {
-            	cl_matA_data = context.createBuffer(Usage.Input, matA_data);
+            	cl_matA_data = context.createBuffer(Usage.Input, matA_data, USE_DEVICE_MEM);
             	buffersRelease.add(cl_matA_data);
-            	cl_matB_data = context.createBuffer(Usage.Input, matB_data);
+            	cl_matB_data = context.createBuffer(Usage.Input, matB_data, USE_DEVICE_MEM);
             	buffersRelease.add(cl_matB_data);
             }
             
@@ -286,14 +306,18 @@ public class MultiplyCL {
 	public static CsrMatrix clMultiplyCOO(CsrMatrix matrixA, CsrMatrix matrixBToTranspose, int nnzCount) {
 		// Lista di CL buffer da deallocare
 		List<CLMem> buffersRelease = Lists.newArrayList();
+		@SuppressWarnings("rawtypes")
 		List<Pointer> pointersRelease = Lists.newArrayList();
 		
 		//
 		CLContext context = null;
 		
 		try {
-			context = JavaCL.createBestContext(DeviceFeature.GPU);
-//			context = JavaCL.createBestContext();
+			if (FORCE_GPU) {
+				context = JavaCL.createBestContext(DeviceFeature.GPU);
+			} else {
+				context = JavaCL.createBestContext();
+			}
 		}  catch (CLException e) {
 			clearAllocatedCLObjects(buffersRelease);
 			clearAllocatedPTRObjects(pointersRelease);
@@ -355,20 +379,21 @@ public class MultiplyCL {
         CLBuffer<Float> cl_output_data = null;
         
         try {
+        	// Always use device mem for the counter
         	cl_counter = context.createBuffer(Usage.InputOutput, counter);
         	buffersRelease.add(cl_counter);
-            cl_matA_rowptr = context.createBuffer(Usage.Input, matA_rowptr);
+            cl_matA_rowptr = context.createBuffer(Usage.Input, matA_rowptr, USE_DEVICE_MEM);
             buffersRelease.add(cl_matA_rowptr);
-            cl_matA_colindices = context.createBuffer(Usage.Input, matA_colindices);
+            cl_matA_colindices = context.createBuffer(Usage.Input, matA_colindices, USE_DEVICE_MEM);
             buffersRelease.add(cl_matA_colindices);
-            cl_matB_rowptr = context.createBuffer(Usage.Input, matB_rowptr);
+            cl_matB_rowptr = context.createBuffer(Usage.Input, matB_rowptr, USE_DEVICE_MEM);
             buffersRelease.add(cl_matB_rowptr);
-            cl_matB_colindices = context.createBuffer(Usage.Input, matB_colindices);
+            cl_matB_colindices = context.createBuffer(Usage.Input, matB_colindices,USE_DEVICE_MEM);
             buffersRelease.add(cl_matB_colindices);
             if (!isBinary) {
-            	cl_matA_data = context.createBuffer(Usage.Input, matA_data);
+            	cl_matA_data = context.createBuffer(Usage.Input, matA_data, USE_DEVICE_MEM);
             	buffersRelease.add(cl_matA_data);
-            	cl_matB_data = context.createBuffer(Usage.Input, matB_data);
+            	cl_matB_data = context.createBuffer(Usage.Input, matB_data, USE_DEVICE_MEM);
             	buffersRelease.add(cl_matB_data);
             }
             
@@ -487,6 +512,7 @@ public class MultiplyCL {
 		listOfObjects.clear();
 	}
 	
+	@SuppressWarnings("rawtypes")
 	private static void clearAllocatedPTRObjects(List<Pointer> listOfObjects) {
 		System.err.println("Clearing POINTERS");
 		for(Pointer buffObject: listOfObjects) {
