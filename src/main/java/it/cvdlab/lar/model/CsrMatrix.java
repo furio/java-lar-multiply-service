@@ -357,51 +357,67 @@ public class CsrMatrix {
 		return fromFlattenArray(denseResult, matrix.getColshape());		
 	}	
 	
+	// Return a sub-row of the matrix:
+	//
+	// [a(i,j) ... a(i,j+length-1)];
+	//
+	// The first element of the matrix is indicated with a(0,0);
+	//
+	// The sub-row is returned in CSR format;
+	//
+	// The sub-row length is taken from the input parameters, if the specified length is
+	// over the last column of the matrix, the returned sub-row is padded with zeroes	
 	@JsonIgnore
 	public CsrMatrix getRowPiece(int i, int j, int length) throws Exception {
-		if ((i < 1) || (j < 1) || (length < 1)) {
-			throw new Exception("Parameters must be > 1");
+		if ((i < 0) || (i >= this.getRowCount())) {
+			throw new Exception("Row index must be in [0, #row - 1]");
 		}
 
-		if (this.getRowptr().size() < 2) {
+		if ((j < 0) || (j >= this.getColCount())) {
+			throw new Exception("Col index must be in [0, #col - 1]");
+		}
+
+		if (length <= 0) {
+			throw new Exception("Length must be > 0");
+		}
+
+		if (this.getRowPointer().size() < 2) {
 			throw new Exception("Matrix is not valid");
-		}
-
-		if (i > this.getRowCount()) {
-			throw new Exception("Row index cannot be > RowCount");
-		}
-
-		if (j > this.getColCount()) {
-			throw new Exception("Col index cannot be > ColCount");
 		}
 
 		if (length > (this.getColCount() - j + 1)) {
 			logger.debug("Warning: out of the bound of the matrix, padded with 0");
 		}
 
+		List<Integer> tmp_row = Lists.newArrayList(new Integer(0));
 		List<Integer> tmp_col = Lists.newArrayList();
 		List<Float> tmp_data = Lists.newArrayList();
 
 		if (this.getNonZeroElementsCount() > 0) {
-			// Matrix is valid so getRowPointer ever has an element in position [i-1]
-			int ptr = this.getRowPointer().get(i - 1);
-			int end_ptr = this.getRowPointer().get(i);
+			// Matrix is valid so getRowPointer ever has an element in position [i + 1]
+			int ptr = this.getRowPointer().get(i);
+			int end_ptr = this.getRowPointer().get(i + 1);
 
-			int column = this.getColumnIndices().get(ptr) + 1;
+			int column = this.getColumnIndices().get(ptr);
+			int end_column = j + length;
 
-			while ((ptr < end_ptr) && (column < (j + length))) {
+			while ((ptr < end_ptr) && (column < end_column)) {
 				
-				if (column > (j - 1)) {
+				if (column >= j) {
 					tmp_col.add(column - j);
 					tmp_data.add(this.getData().get(ptr));
 				}
 
 				ptr++;
-				column = this.getColumnIndices().get(ptr) + 1;
+				if (ptr < end_ptr) {
+					column = this.getColumnIndices().get(ptr);
+				}
 			}
 		}
 		
-		return new CsrMatrix(Ints.asList(new int[]{0,length}), tmp_col, tmp_data, 1, length);
+		tmp_row.add(tmp_col.size());
+		
+		return new CsrMatrix(tmp_row, tmp_col, tmp_data, 1, length);
 	}
 	
 	public List<Integer> getRowptr() {
