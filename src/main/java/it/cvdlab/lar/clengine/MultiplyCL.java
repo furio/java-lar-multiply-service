@@ -301,6 +301,13 @@ public class MultiplyCL {
 		clearAllocatedCLObjects(buffersRelease);
 		clearAllocatedPTRObjects(pointersRelease);
 		context.release();
+		
+		queue = null;
+		multiplyMatrixKernel = null;
+		program = null;
+		context = null;
+		buffersRelease = null;
+		pointersRelease = null;
         
 		// System.out.println(listMatrixOut);
 		
@@ -490,6 +497,13 @@ public class MultiplyCL {
 		clearAllocatedCLObjects(buffersRelease);
 		clearAllocatedPTRObjects(pointersRelease);
 		context.release();
+		
+		queue = null;
+		multiplyMatrixKernel = null;
+		program = null;
+		context = null;
+		buffersRelease = null;
+		pointersRelease = null;		
 		
 		return CsrMatrix.fromCOOArray(listMatrixOut, matrixA.getRowshape(), matrixBToTranspose.getColshape());
 	}	
