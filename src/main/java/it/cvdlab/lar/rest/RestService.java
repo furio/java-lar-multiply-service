@@ -4,6 +4,7 @@ import it.cvdlab.lar.clengine.MultiplyCL;
 import it.cvdlab.lar.model.CsrMatrix;
 
 import java.io.IOException;
+import java.net.URLDecoder;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -25,8 +26,8 @@ import org.slf4j.LoggerFactory;
 
 @Path(RestService.REST_SERVICE_URL)
 public class RestService {
-	private static final String MATRIX_FIRST_PARAM = "matrixA";
-	private static final String MATRIX_SECOND_PARAM = "matrixB";
+	private static final String MATRIX_FIRST_PARAM = "matrixa";
+	private static final String MATRIX_SECOND_PARAM = "matrixb";
 	
 	
     @Context
@@ -55,12 +56,12 @@ public class RestService {
     	CsrMatrix secondMatrix = null;
     	boolean firstParse = false;
     	boolean secondParse = false;
-    	
+
     	// System.err.println(form.toString());
     	
     	if ( form.containsKey(MATRIX_FIRST_PARAM) ) {
     		try {
-    			firstMatrix = jacksonMapper.readValue(form.getFirst(MATRIX_FIRST_PARAM), CsrMatrix.class);
+    			firstMatrix = jacksonMapper.readValue( URLDecoder.decode(form.getFirst(MATRIX_FIRST_PARAM), "UTF-8"), CsrMatrix.class);
     			firstParse = true;
 			} catch (JsonParseException e) {
 				System.err.println( e.toString() );
@@ -73,7 +74,7 @@ public class RestService {
     	
     	if ( form.containsKey(MATRIX_SECOND_PARAM) ) {
     		try {
-    			secondMatrix = jacksonMapper.readValue(form.getFirst(MATRIX_SECOND_PARAM), CsrMatrix.class);
+    			secondMatrix = jacksonMapper.readValue( URLDecoder.decode(form.getFirst(MATRIX_SECOND_PARAM), "UTF-8"), CsrMatrix.class);
     			secondParse = true;
 			} catch (JsonParseException e) {
 				System.err.println( e.toString() );
@@ -85,7 +86,6 @@ public class RestService {
     	}
     	
     	CsrMatrix resultMatrix = null;
-    	
     	if ((firstMatrix != null) && (secondMatrix != null) && firstParse && secondParse) {
     		resultMatrix = MultiplyCL.multiply(firstMatrix, secondMatrix);
     	}

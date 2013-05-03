@@ -106,10 +106,17 @@ public class MultiplyCL {
 	private static CsrMatrix clMultiply(CsrMatrix matrixA, CsrMatrix matrixBToTranspose) {
 		// Lista di CL buffer da deallocare
 		List<CLMem> buffersRelease = Lists.newArrayList();
-
-		// Context
-		CLContext context = JavaCL.createBestContext(DeviceFeature.GPU);
-		// CLContext context = JavaCL.createBestContext();
+		CLContext context = null;
+		
+		try {
+			context = JavaCL.createBestContext(DeviceFeature.GPU);
+//			context = JavaCL.createBestContext();
+		}  catch (CLException e) {
+			clearAllocatedCLObjects(buffersRelease);
+			
+			System.err.println(e.toString());
+			return null;    	
+        }
 		
 		// WorkGroupSize
 		long maxWorkGroupSize = Long.MAX_VALUE;
@@ -174,8 +181,9 @@ public class MultiplyCL {
         } catch (CLException e) {
 			queue.release();
 			clearAllocatedCLObjects(buffersRelease);
+			context.release();
 			
-			logger.error(e.toString());
+			System.err.println(e.toString());
 			return null;        	
         }
 
@@ -187,8 +195,9 @@ public class MultiplyCL {
 		} catch (IOException e) {
 			queue.release();
 			clearAllocatedCLObjects(buffersRelease);
+			context.release();
 			
-			logger.error(e.toString());
+			System.err.println(e.toString());
 			return null;
 		}
     	kernelSource = kernelSource.replaceAll("%%AROW%%", Integer.toString( matrixA.getRowCount() ) );
@@ -226,8 +235,9 @@ public class MultiplyCL {
 			multiplyMatrixKernel.release();
 			program.release();
 			clearAllocatedCLObjects(buffersRelease);
+			context.release();
 			
-			logger.error(e.toString());
+			System.err.println(e.toString());
 			return null;
 		}
 
@@ -245,6 +255,7 @@ public class MultiplyCL {
 		multiplyMatrixKernel.release();
 		program.release();
 		clearAllocatedCLObjects(buffersRelease);
+		context.release();
         
 		// System.out.println(listMatrixOut);
 		
@@ -255,10 +266,19 @@ public class MultiplyCL {
 	public static CsrMatrix clMultiplyCOO(CsrMatrix matrixA, CsrMatrix matrixBToTranspose, int nnzCount) {
 		// Lista di CL buffer da deallocare
 		List<CLMem> buffersRelease = Lists.newArrayList();
-
+		CLContext context = null;
+		
+		try {
+			context = JavaCL.createBestContext(DeviceFeature.GPU);
+//			context = JavaCL.createBestContext();
+		}  catch (CLException e) {
+			clearAllocatedCLObjects(buffersRelease);
+			
+			System.err.println(e.toString());
+			return null;    	
+        }
 		// Context
-		CLContext context = JavaCL.createBestContext(DeviceFeature.GPU);
-//		CLContext context = JavaCL.createBestContext();
+
 		
 		// WorkGroupSize
 		long maxWorkGroupSize = Long.MAX_VALUE;
@@ -327,8 +347,9 @@ public class MultiplyCL {
         } catch (CLException e) {
 			queue.release();
 			clearAllocatedCLObjects(buffersRelease);
+			context.release();
 			
-			logger.error(e.toString());
+			System.err.println(e.toString());
 			return null;    	
         }
 
@@ -340,8 +361,9 @@ public class MultiplyCL {
 		} catch (IOException e) {
 			queue.release();
 			clearAllocatedCLObjects(buffersRelease);
+			context.release();
 			
-			logger.error(e.toString());
+			System.err.println(e.toString());
 			return null;
 		}
     	kernelSource = kernelSource.replaceAll("%%AROW%%", Integer.toString( matrixA.getRowCount() ) );
@@ -381,8 +403,9 @@ public class MultiplyCL {
 			multiplyMatrixKernel.release();
 			program.release();
 			clearAllocatedCLObjects(buffersRelease);
+			context.release();
 			
-			logger.error(e.toString());
+			System.err.println(e.toString());
 			return null;
 		}
 
@@ -400,6 +423,7 @@ public class MultiplyCL {
 		multiplyMatrixKernel.release();
 		program.release();
 		clearAllocatedCLObjects(buffersRelease);
+		context.release();
 		
 		return CsrMatrix.fromCOOArray(listMatrixOut, matrixA.getRowshape(), matrixBToTranspose.getColshape());
 	}	
