@@ -39,7 +39,7 @@ public class MultiplyCL {
             + ".noOpenCL";    
 	
     // 
-	private static int NNZ_WEIGHT = 1;
+	private static int NNZ_WEIGHT = 3;
 	private static boolean USECOO = false;
 	private static boolean NO_OPENCL = false;
 	
@@ -80,17 +80,23 @@ public class MultiplyCL {
 		
 		try {
 			nnzCount = matrixA.nnzMultiplyCount(matrixB);
-			logger.info("NNZCount: " + nnzCount );
+			// System.out.println("NNZCount: " + nnzCount );
 		} catch (Exception e) {
 			logger.error(e.toString());
 			return null; 
-		}		
+		}
+		
+		System.err.println("===");
+		System.err.println("A Res: " + matrixA.getRowPointer().size() + "-" + matrixA.getColdata().size());
+		System.err.println("B Res: " + matrixB.getRowPointer().size() + "-" + matrixB.getColdata().size());
+		System.err.println("Dim Res: " + matrixA.getRowCount() * matrixB.getColCount());
+		System.err.println("NNZ Res: " + nnzCount);
 		
 		if ( USECOO || ((matrixA.getRowCount() * matrixB.getColCount()) > ( nnzCount * NNZ_WEIGHT )) ) {
-			logger.info("COO Way");
+			System.err.println("COO Way");
 			return clMultiplyCOO(matrixA, matrixB, nnzCount);
 		} else {
-			System.out.println("Dense Way");
+			System.err.println("Dense Way");
 			return clMultiply(matrixA, matrixB);
 		}
 	}
@@ -106,6 +112,8 @@ public class MultiplyCL {
 	private static CsrMatrix clMultiply(CsrMatrix matrixA, CsrMatrix matrixBToTranspose) {
 		// Lista di CL buffer da deallocare
 		List<CLMem> buffersRelease = Lists.newArrayList();
+		List<Pointer> pointersRelease = Lists.newArrayList();
+		
 		CLContext context = null;
 		
 		try {
@@ -113,6 +121,7 @@ public class MultiplyCL {
 //			context = JavaCL.createBestContext();
 		}  catch (CLException e) {
 			clearAllocatedCLObjects(buffersRelease);
+			clearAllocatedPTRObjects(pointersRelease);
 			
 			System.err.println(e.toString());
 			return null;    	
@@ -136,12 +145,18 @@ public class MultiplyCL {
         
         // Allocate
         matA_rowptr = Pointer.allocateInts(matrixA.getRowptr().size()).order(byteOrder);
+        pointersRelease.add(matA_rowptr);
         matA_colindices = Pointer.allocateInts(matrixA.getColdata().size()).order(byteOrder);
+        pointersRelease.add(matA_colindices);
         matB_rowptr = Pointer.allocateInts(matrixB.getRowptr().size()).order(byteOrder);
+        pointersRelease.add(matB_rowptr);
         matB_colindices = Pointer.allocateInts(matrixB.getColdata().size()).order(byteOrder);
+        pointersRelease.add(matB_colindices);
         if (!isBinary) {
         	matA_data = Pointer.allocateFloats(matrixA.getData().size()).order(byteOrder);
+        	pointersRelease.add(matA_data);
         	matB_data = Pointer.allocateFloats(matrixB.getData().size()).order(byteOrder);
+        	pointersRelease.add(matB_data);
         }
         
         copyToPointer(matrixA.getRowptr(), matA_rowptr);
@@ -181,6 +196,7 @@ public class MultiplyCL {
         } catch (CLException e) {
 			queue.release();
 			clearAllocatedCLObjects(buffersRelease);
+			clearAllocatedPTRObjects(pointersRelease);
 			context.release();
 			
 			System.err.println(e.toString());
@@ -195,6 +211,7 @@ public class MultiplyCL {
 		} catch (IOException e) {
 			queue.release();
 			clearAllocatedCLObjects(buffersRelease);
+			clearAllocatedPTRObjects(pointersRelease);
 			context.release();
 			
 			System.err.println(e.toString());
@@ -235,6 +252,7 @@ public class MultiplyCL {
 			multiplyMatrixKernel.release();
 			program.release();
 			clearAllocatedCLObjects(buffersRelease);
+			clearAllocatedPTRObjects(pointersRelease);
 			context.release();
 			
 			System.err.println(e.toString());
@@ -246,6 +264,7 @@ public class MultiplyCL {
         
        
         Pointer<Float> matrixDataOut = cl_output_data.read(queue, addEvt);
+        pointersRelease.add(matrixDataOut);
         // Pointer<Float> matrixDataOut = Pointer.allocateFloats(matrixA.getRowCount()*matrixBToTranspose.getColCount()).order(byteOrder);
         // cl_output_data.read(queue, matrixDataOut, true, addEvt);
         
@@ -255,6 +274,7 @@ public class MultiplyCL {
 		multiplyMatrixKernel.release();
 		program.release();
 		clearAllocatedCLObjects(buffersRelease);
+		clearAllocatedPTRObjects(pointersRelease);
 		context.release();
         
 		// System.out.println(listMatrixOut);
@@ -266,6 +286,9 @@ public class MultiplyCL {
 	public static CsrMatrix clMultiplyCOO(CsrMatrix matrixA, CsrMatrix matrixBToTranspose, int nnzCount) {
 		// Lista di CL buffer da deallocare
 		List<CLMem> buffersRelease = Lists.newArrayList();
+		List<Pointer> pointersRelease = Lists.newArrayList();
+		
+		//
 		CLContext context = null;
 		
 		try {
@@ -273,6 +296,7 @@ public class MultiplyCL {
 //			context = JavaCL.createBestContext();
 		}  catch (CLException e) {
 			clearAllocatedCLObjects(buffersRelease);
+			clearAllocatedPTRObjects(pointersRelease);
 			
 			System.err.println(e.toString());
 			return null;    	
@@ -299,13 +323,20 @@ public class MultiplyCL {
         // Allocate
         counter = Pointer.allocateInt().order(byteOrder);
         counter.set(0);
+        pointersRelease.add(counter);
         matA_rowptr = Pointer.allocateInts(matrixA.getRowptr().size()).order(byteOrder);
+        pointersRelease.add(matA_rowptr);
         matA_colindices = Pointer.allocateInts(matrixA.getColdata().size()).order(byteOrder);
+        pointersRelease.add(matA_colindices);
         matB_rowptr = Pointer.allocateInts(matrixB.getRowptr().size()).order(byteOrder);
+        pointersRelease.add(matB_rowptr);
         matB_colindices = Pointer.allocateInts(matrixB.getColdata().size()).order(byteOrder);
+        pointersRelease.add(matB_colindices);
         if (!isBinary) {
         	matA_data = Pointer.allocateFloats(matrixA.getData().size()).order(byteOrder);
+        	pointersRelease.add(matA_data);
         	matB_data = Pointer.allocateFloats(matrixB.getData().size()).order(byteOrder);
+        	pointersRelease.add(matB_data);
         }
         
         copyToPointer(matrixA.getRowptr(), matA_rowptr);
@@ -347,6 +378,7 @@ public class MultiplyCL {
         } catch (CLException e) {
 			queue.release();
 			clearAllocatedCLObjects(buffersRelease);
+			clearAllocatedPTRObjects(pointersRelease);
 			context.release();
 			
 			System.err.println(e.toString());
@@ -361,6 +393,7 @@ public class MultiplyCL {
 		} catch (IOException e) {
 			queue.release();
 			clearAllocatedCLObjects(buffersRelease);
+			clearAllocatedPTRObjects(pointersRelease);
 			context.release();
 			
 			System.err.println(e.toString());
@@ -403,6 +436,7 @@ public class MultiplyCL {
 			multiplyMatrixKernel.release();
 			program.release();
 			clearAllocatedCLObjects(buffersRelease);
+			clearAllocatedPTRObjects(pointersRelease);
 			context.release();
 			
 			System.err.println(e.toString());
@@ -414,6 +448,7 @@ public class MultiplyCL {
         
        
         Pointer<Float> matrixDataOut = cl_output_data.read(queue, addEvt);
+        pointersRelease.add(matrixDataOut);
         // Pointer<Float> matrixDataOut = Pointer.allocateFloats(matrixA.getRowCount()*matrixBToTranspose.getColCount()).order(byteOrder);
         // cl_output_data.read(queue, matrixDataOut, true, addEvt);
         
@@ -423,6 +458,7 @@ public class MultiplyCL {
 		multiplyMatrixKernel.release();
 		program.release();
 		clearAllocatedCLObjects(buffersRelease);
+		clearAllocatedPTRObjects(pointersRelease);
 		context.release();
 		
 		return CsrMatrix.fromCOOArray(listMatrixOut, matrixA.getRowshape(), matrixBToTranspose.getColshape());
@@ -444,11 +480,20 @@ public class MultiplyCL {
 	}	
 	
 	private static void clearAllocatedCLObjects(List<CLMem> listOfObjects) {
+		System.err.println("Clearing CLMEM");
 		for(CLMem buffObject: listOfObjects) {
 			buffObject.release();
 		}
 		listOfObjects.clear();
 	}
+	
+	private static void clearAllocatedPTRObjects(List<Pointer> listOfObjects) {
+		System.err.println("Clearing POINTERS");
+		for(Pointer buffObject: listOfObjects) {
+			buffObject.release();
+		}
+		listOfObjects.clear();
+	}	
 	
 //	public static void main(String[] args) throws Exception {
 //		int[] matrixOne = new int[]{1,0,0,0,1,0,1,0,0,0,0,0,0,0,1,0,0,1,1,0};
