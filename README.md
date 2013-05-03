@@ -48,7 +48,7 @@ You can edit the pom.xml directly or pass arguments to Maven command line.
 > Maximum size of POST body in bytes.
 
 ##### it.cvdlab.lar.clengine.nnzWeight
-> ( _default: 1_ )
+> ( _default: 3_ )
 >
 > The system calculates `rows * columns` of input matrices and if greater than `nnzWeight * nnz` of results uses COO CL kernel.
 
