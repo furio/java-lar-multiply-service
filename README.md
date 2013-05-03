@@ -7,7 +7,7 @@ A simple REST module that performs sparse matrix multiplication through WebCL/We
 
 * OpenCL
 * JDK 1.6 or greater
-* Maven
+* Maven (version 3 or greater)
 
 ## Installing
 
