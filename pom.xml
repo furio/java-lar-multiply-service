@@ -1,100 +1,97 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>it.cvdlab.lar</groupId>
-  <artifactId>lar</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
-  <packaging>war</packaging>
-  <name>Java Multiply Rest Service</name>
-  <repositories>
-	<repository>
-		<id>sonatype</id>
-		<name>Sonatype OSS Snapshots Repository</name>
-		<url>http://oss.sonatype.org/content/groups/public</url>
-	</repository>
-  </repositories>
-  <pluginRepositories>
-	<pluginRepository>
-		<id>sonatype</id>
-		<name>Sonatype OSS Snapshots Repository</name>
-		<url>http://oss.sonatype.org/content/groups/public</url>
-	</pluginRepository>
-  </pluginRepositories>
-  <dependencies>
-    	<dependency>
-    		<groupId>javax.servlet</groupId>
-    		<artifactId>javax.servlet-api</artifactId>
-    		<version>3.0.1</version>
-    		<scope>provided</scope>
-    	</dependency>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>it.cvdlab.lar</groupId>
+	<artifactId>lar</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>war</packaging>
+	<name>Java Multiply Rest Service</name>
+	<repositories>
+		<repository>
+			<id>sonatype</id>
+			<name>Sonatype OSS Snapshots Repository</name>
+			<url>http://oss.sonatype.org/content/groups/public</url>
+		</repository>
+	</repositories>
+	<pluginRepositories>
+		<pluginRepository>
+			<id>sonatype</id>
+			<name>Sonatype OSS Snapshots Repository</name>
+			<url>http://oss.sonatype.org/content/groups/public</url>
+		</pluginRepository>
+	</pluginRepositories>
+	<dependencies>
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>javax.servlet-api</artifactId>
+			<version>3.0.1</version>
+			<scope>provided</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.eclipse.jetty</groupId>
 			<artifactId>jetty-servlets</artifactId>
 			<version>8.1.10.v20130312</version>
-		</dependency>    	
-        <dependency>
-            <groupId>org.apache.wink</groupId>
-            <artifactId>wink-server</artifactId>
-            <version>1.2.1-incubating</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.wink</groupId>
-            <artifactId>wink-jackson-provider</artifactId>
-            <version>1.2.1-incubating</version>
-        </dependency>
-        <dependency>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.wink</groupId>
+			<artifactId>wink-server</artifactId>
+			<version>1.2.1-incubating</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.wink</groupId>
+			<artifactId>wink-jackson-provider</artifactId>
+			<version>1.2.1-incubating</version>
+		</dependency>
+		<dependency>
 			<groupId>com.nativelibs4java</groupId>
 			<artifactId>javacl</artifactId>
 			<version>1.0.0-RC3</version>
 		</dependency>
 		<dependency>
-    		<groupId>com.google.guava</groupId>
-    		<artifactId>guava</artifactId>
-    		<version>14.0.1</version>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>14.0.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-log4j12</artifactId>
 			<version>1.7.5</version>
-		</dependency>		
-  </dependencies>
-  <build>
-         <plugins>
-            <plugin>
-                <groupId>org.mortbay.jetty</groupId>
-                <!--  <artifactId>maven-jetty-plugin</artifactId> -->
-                <artifactId>jetty-maven-plugin</artifactId>
-			    <configuration>
+		</dependency>
+	</dependencies>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.mortbay.jetty</groupId>
+				<!-- <artifactId>maven-jetty-plugin</artifactId> -->
+				<artifactId>jetty-maven-plugin</artifactId>
+				<configuration>
 					<scanIntervalSeconds>10</scanIntervalSeconds>
 					<stopKey>foo</stopKey>
 					<stopPort>9966</stopPort>
 
-    			<systemProperties>
-					<systemProperty>
-						<name>jetty.logs</name>
-						<value>${basedir}/target</value>
-					</systemProperty>
-					<systemProperty>
-						<name>jetty.port</name>
-						<value>3000</value>
-					</systemProperty>
-					<systemProperty>
-						<name>log4j.configuration</name>
-						<value>file:./target/classes/log4j.properties</value>
-					</systemProperty>	
-					<!-- 
-					<systemProperty>
-						<name>org.mortbay.jetty.Request.maxFormContentSize</name>
-						<value>2000000000</value>
-					</systemProperty>	
-					 -->
-					<systemProperty>
-						<name>org.eclipse.jetty.server.Request.maxFormContentSize</name>
-						<value>2000000000</value>
-					</systemProperty>					 
+					<systemProperties>
+						<systemProperty>
+							<name>jetty.logs</name>
+							<value>${basedir}/target</value>
+						</systemProperty>
+						<systemProperty>
+							<name>jetty.port</name>
+							<value>3000</value>
+						</systemProperty>
+						<systemProperty>
+							<name>log4j.configuration</name>
+							<value>file:./target/classes/log4j.properties</value>
+						</systemProperty>
+						<!-- <systemProperty> <name>org.mortbay.jetty.Request.maxFormContentSize</name> 
+							<value>2000000000</value> </systemProperty> -->
+						<systemProperty>
+							<name>org.eclipse.jetty.server.Request.maxFormContentSize</name>
+							<value>2000000000</value>
+						</systemProperty>
 
-				</systemProperties>				
-			    </configuration>
-            </plugin>
-        </plugins>
-  </build>  
+					</systemProperties>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 </project>

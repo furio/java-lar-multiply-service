@@ -60,6 +60,7 @@ public class MultiplyCL {
 			try{
 				int value = Integer.valueOf(nnzWeight);
 				if (value >= 1) {
+					System.out.println(PROPERTY_NNZWEIGHT+ ": " + value);
 					NNZ_WEIGHT = value;
 				}
 			} catch(NumberFormatException e) {
@@ -69,18 +70,22 @@ public class MultiplyCL {
 		
 		if (useCOO != null) {
 			USECOO = Boolean.valueOf(useCOO);
+			System.out.println(PROPERTY_USECOO+ ": " + USECOO);
 		}
 		
 		if (noOpenCL != null) {
 			NO_OPENCL = Boolean.valueOf(noOpenCL);
+			System.out.println(PROPERTY_NOCL+ ": " + NO_OPENCL);
 		}
 
 		if (deviceMem != null) {
 			USE_DEVICE_MEM = Boolean.valueOf(deviceMem);
+			System.out.println(PROPERTY_USEDEVICEMEM+ ": " + USE_DEVICE_MEM);		
 		}
 		
 		if (forceGPU != null) {
 			FORCE_GPU = Boolean.valueOf(forceGPU);
+			System.out.println(PROPERTY_FORCEGPUCX+ ": " + FORCE_GPU);
 		}
 	}
 	
