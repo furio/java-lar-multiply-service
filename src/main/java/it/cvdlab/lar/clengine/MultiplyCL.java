@@ -40,7 +40,9 @@ public class MultiplyCL {
     private static final String PROPERTY_FORCEGPUCX = MultiplyCL.class.getPackage().getName()
             + ".forceGPU";    
     private static final String PROPERTY_USEDEVICEMEM = MultiplyCL.class.getPackage().getName()
-            + ".useDeviceMem";        
+            + ".useDeviceMem";
+    private static final String PROPERTY_FORCEGC = MultiplyCL.class.getPackage().getName()
+            + ".forceGC";      
 	
     // 
 	private static int NNZ_WEIGHT = 3;
@@ -48,6 +50,7 @@ public class MultiplyCL {
 	private static boolean NO_OPENCL = false;
 	private static boolean FORCE_GPU = true;
 	private static boolean USE_DEVICE_MEM = true;
+	private static boolean FORCE_GC = false;
 	
 	static {
 		String nnzWeight = System.getProperty(PROPERTY_NNZWEIGHT);
@@ -55,6 +58,7 @@ public class MultiplyCL {
 		String noOpenCL = System.getProperty(PROPERTY_NOCL);
 		String forceGPU = System.getProperty(PROPERTY_FORCEGPUCX);
 		String deviceMem = System.getProperty(PROPERTY_USEDEVICEMEM);
+		String forceGC = System.getProperty(PROPERTY_FORCEGC);
 		
 		if (nnzWeight != null) {
 			try{
@@ -87,6 +91,11 @@ public class MultiplyCL {
 			FORCE_GPU = Boolean.valueOf(forceGPU);
 			System.out.println(PROPERTY_FORCEGPUCX+ ": " + FORCE_GPU);
 		}
+		
+		if (forceGC != null) {
+			FORCE_GC = Boolean.valueOf(forceGC);
+			System.out.println(PROPERTY_FORCEGC+ ": " + FORCE_GC);
+		}		
 	}
 	
 	public static synchronized CsrMatrix multiply(CsrMatrix matrixA, CsrMatrix matrixB) {
@@ -113,13 +122,21 @@ public class MultiplyCL {
 		System.err.println("Dim Res: " + matrixA.getRowCount() * matrixB.getColCount());
 		System.err.println("NNZ Res: " + nnzCount);
 		
+		CsrMatrix resultMatrix = null;
 		if ( USECOO || ((matrixA.getRowCount() * matrixB.getColCount()) > ( nnzCount * NNZ_WEIGHT )) ) {
 			System.err.println("COO Way");
-			return clMultiplyCOO(matrixA, matrixB, nnzCount);
+			resultMatrix = clMultiplyCOO(matrixA, matrixB, nnzCount);
 		} else {
 			System.err.println("Dense Way");
-			return clMultiply(matrixA, matrixB);
+			resultMatrix = clMultiply(matrixA, matrixB);
 		}
+		
+		if ( FORCE_GC ) {
+			System.gc();
+			System.gc();
+		}
+		
+		return resultMatrix;
 	}
 	private static CsrMatrix jsMultiply(CsrMatrix matrixA, CsrMatrix matrixBToTranspose) {
 		try {
@@ -219,6 +236,7 @@ public class MultiplyCL {
             cl_output_data = context.createFloatBuffer(Usage.Output, matrixA.getRowCount()*matrixBToTranspose.getColCount());
             buffersRelease.add(cl_output_data);
         } catch (CLException e) {
+			queue.flush();
 			queue.release();
 			clearAllocatedCLObjects(buffersRelease);
 			clearAllocatedPTRObjects(pointersRelease);
@@ -234,6 +252,7 @@ public class MultiplyCL {
 		try {
 			kernelSource = IOUtils.readText(MultiplyCL.class.getResource("SpMSpM-Multiply-Naive.cl"));
 		} catch (IOException e) {
+			queue.flush();
 			queue.release();
 			clearAllocatedCLObjects(buffersRelease);
 			clearAllocatedPTRObjects(pointersRelease);
@@ -273,6 +292,7 @@ public class MultiplyCL {
 		try {
 			niceSizes = SizeEstimator.getGoodSizes(matrixA.getRowCount(), matrixB.getRowCount(), (int) maxWorkGroupSize);
 		} catch (Exception e) {
+			queue.flush();
 			queue.release();
 			multiplyMatrixKernel.release();
 			program.release();
@@ -287,27 +307,21 @@ public class MultiplyCL {
         // queue.finish();
         CLEvent addEvt = multiplyMatrixKernel.enqueueNDRange(queue, niceSizes.get(0), niceSizes.get(1));
         
-       
         Pointer<Float> matrixDataOut = cl_output_data.read(queue, addEvt);
         pointersRelease.add(matrixDataOut);
         // Pointer<Float> matrixDataOut = Pointer.allocateFloats(matrixA.getRowCount()*matrixBToTranspose.getColCount()).order(byteOrder);
         // cl_output_data.read(queue, matrixDataOut, true, addEvt);
         
-        List<Float> listMatrixOut = copyFromPointer(matrixDataOut);
+        List<Float> listMatrixOut = copyFromPointerFloat(matrixDataOut);
         
-		queue.release();
+        addEvt.release();
+        queue.flush();
+        queue.release();
 		multiplyMatrixKernel.release();
 		program.release();
 		clearAllocatedCLObjects(buffersRelease);
 		clearAllocatedPTRObjects(pointersRelease);
 		context.release();
-		
-		queue = null;
-		multiplyMatrixKernel = null;
-		program = null;
-		context = null;
-		buffersRelease = null;
-		pointersRelease = null;
         
 		// System.out.println(listMatrixOut);
 		
@@ -413,6 +427,7 @@ public class MultiplyCL {
             cl_output_data = context.createFloatBuffer(Usage.Output, nnzCount*3); //float3
             buffersRelease.add(cl_output_data);
         } catch (CLException e) {
+        	queue.flush();
 			queue.release();
 			clearAllocatedCLObjects(buffersRelease);
 			clearAllocatedPTRObjects(pointersRelease);
@@ -428,6 +443,7 @@ public class MultiplyCL {
 		try {
 			kernelSource = IOUtils.readText(MultiplyCL.class.getResource("SpMSpM-Multiply-COO.cl"));
 		} catch (IOException e) {
+			queue.flush();
 			queue.release();
 			clearAllocatedCLObjects(buffersRelease);
 			clearAllocatedPTRObjects(pointersRelease);
@@ -469,6 +485,7 @@ public class MultiplyCL {
 		try {
 			niceSizes = SizeEstimator.getGoodSizes(matrixA.getRowCount(), matrixB.getRowCount(), (int) maxWorkGroupSize);
 		} catch (Exception e) {
+			queue.flush();
 			queue.release();
 			multiplyMatrixKernel.release();
 			program.release();
@@ -489,21 +506,16 @@ public class MultiplyCL {
         // Pointer<Float> matrixDataOut = Pointer.allocateFloats(matrixA.getRowCount()*matrixBToTranspose.getColCount()).order(byteOrder);
         // cl_output_data.read(queue, matrixDataOut, true, addEvt);
         
-        List<Float> listMatrixOut = copyFromPointer(matrixDataOut);
-        
-		queue.release();
+        List<Float> listMatrixOut = copyFromPointerFloat(matrixDataOut);
+		
+        addEvt.release();
+        queue.flush();
+        queue.release();
 		multiplyMatrixKernel.release();
 		program.release();
 		clearAllocatedCLObjects(buffersRelease);
 		clearAllocatedPTRObjects(pointersRelease);
 		context.release();
-		
-		queue = null;
-		multiplyMatrixKernel = null;
-		program = null;
-		context = null;
-		buffersRelease = null;
-		pointersRelease = null;		
 		
 		return CsrMatrix.fromCOOArray(listMatrixOut, matrixA.getRowshape(), matrixBToTranspose.getColshape());
 	}	
@@ -515,13 +527,22 @@ public class MultiplyCL {
 		}
 	}
 	
-	private static <T> List<T> copyFromPointer(Pointer<T> iPointer) {
+	@SuppressWarnings("unused")
+	private static <T extends Number> List<T> copyFromPointer(Pointer<T> lPointer) {
 		List<T> tmpList = Lists.newArrayList();
-		for(T singleData: iPointer) {
-			tmpList.add(singleData);
+		for(T singleData: lPointer) {
+			tmpList.add( singleData );
 		}
 		return Lists.newArrayList(tmpList);
-	}	
+	}
+	
+	private static List<Float> copyFromPointerFloat(Pointer<Float> fPointer) {
+		List<Float> tmpList = Lists.newArrayList();
+		for(Float singleData: fPointer) {
+			tmpList.add( new Float(singleData) );
+		}
+		return Lists.newArrayList(tmpList);
+	}		
 	
 	private static void clearAllocatedCLObjects(List<CLMem> listOfObjects) {
 		System.err.println("Clearing CLMEM");
