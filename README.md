@@ -26,6 +26,13 @@ A simple REST module that performs sparse matrix multiplication through WebCL/We
 2. `export LD_PRELOAD=$JAVA_HOME/jre/lib/amd64/libjsig.so` (`$JAVA_HOME` should point to your JDK installation directory)
 3. `mvn jetty:run`
 
+*or*
+
+1. Enter the repository directory
+2. Be sure that `$JAVA_HOME` points to your JDK installation directory
+3. `sh start-project.sh`
+
+
 ## Software Options
 
 You can edit the pom.xml directly or pass arguments to Maven command line.
