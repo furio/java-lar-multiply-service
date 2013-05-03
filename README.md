@@ -50,7 +50,7 @@ You can edit the pom.xml directly or pass arguments to Maven command line.
 ##### it.cvdlab.lar.clengine.nnzWeight
 > ( _default: 3_ )
 >
-> The system calculates `rows * columns` of input matrices and if greater than `nnzWeight * nnz` of results uses COO CL kernel.
+> The system calculates `rows * columns` of input matrices and if greater than `nnzWeight * nnz` of result uses COO CL kernel.
 
 ##### it.cvdlab.lar.clengine.useCOO
 > ( _default: false_ )
@@ -71,6 +71,11 @@ You can edit the pom.xml directly or pass arguments to Maven command line.
 > ( _default: true_ )
 >
 > Copy always the data to the device(s) memory.
+
+##### it.cvdlab.lar.clengine.forceGC
+> ( _default: false_ )
+>
+> After a computation call the JVM garbage collector.
 
 ## JVM Options
 
