@@ -7,7 +7,7 @@ A simple REST module that performs sparse matrix multiplication through WebCL/We
 
 * OpenCL
 * JDK 1.6 or greater
-* Maven
+* Maven (version 3 or greater)
 
 ## Installing
 
@@ -26,6 +26,13 @@ A simple REST module that performs sparse matrix multiplication through WebCL/We
 2. `export LD_PRELOAD=$JAVA_HOME/jre/lib/amd64/libjsig.so` (`$JAVA_HOME` should point to your JDK installation directory)
 3. `mvn jetty:run`
 
+*or*
+
+1. Enter the repository directory
+2. Be sure that `$JAVA_HOME` points to your JDK installation directory
+3. `sh start-project.sh`
+
+
 ## Software Options
 
 You can edit the pom.xml directly or pass arguments to Maven command line.
@@ -41,9 +48,9 @@ You can edit the pom.xml directly or pass arguments to Maven command line.
 > Maximum size of POST body in bytes.
 
 ##### it.cvdlab.lar.clengine.nnzWeight
-> ( _default: 1_ )
+> ( _default: 3_ )
 >
-> The system calculates `rows * columns` of input matrices and if greater than `nnzWeight * nnz` of results uses COO CL kernel.
+> The system calculates `rows * columns` of input matrices and if greater than `nnzWeight * nnz` of result uses COO CL kernel.
 
 ##### it.cvdlab.lar.clengine.useCOO
 > ( _default: false_ )
@@ -54,6 +61,21 @@ You can edit the pom.xml directly or pass arguments to Maven command line.
 > ( _default: false_ )
 >
 > Override any possible configuration and let Java compute the result of the matrix multiplication.
+
+##### it.cvdlab.lar.clengine.forceGPU
+> ( _default: true_ )
+>
+> Use always the GPU(s) in the system for the OpenCL context.
+
+##### it.cvdlab.lar.clengine.useDeviceMem
+> ( _default: true_ )
+>
+> Copy always the data to the device(s) memory.
+
+##### it.cvdlab.lar.clengine.forceGC
+> ( _default: false_ )
+>
+> After a computation call the JVM garbage collector.
 
 ## JVM Options
 
