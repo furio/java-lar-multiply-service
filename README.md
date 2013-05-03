@@ -62,6 +62,16 @@ You can edit the pom.xml directly or pass arguments to Maven command line.
 >
 > Override any possible configuration and let Java compute the result of the matrix multiplication.
 
+##### it.cvdlab.lar.clengine.forceGPU
+> ( _default: true_ )
+>
+> Use always the GPU(s) in the system for the OpenCL context.
+
+##### it.cvdlab.lar.clengine.useDeviceMem
+> ( _default: true_ )
+>
+> Copy always the data to the device(s) memory.
+
 ## JVM Options
 
 You might want to give more RAM (for example 8Gb) to the JVM
