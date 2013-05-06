@@ -13,7 +13,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
 
-public class SizeEstimator {
+public final class SizeEstimator {
 	private static final Logger logger = LoggerFactory.getLogger(SizeEstimator.class);
 	
 	private static final int MINIMUM_DIVISORS = 2;

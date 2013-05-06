@@ -26,7 +26,7 @@ import com.nativelibs4java.opencl.CLQueue;
 import com.nativelibs4java.opencl.JavaCL;
 import com.nativelibs4java.util.IOUtils;
 
-public class MultiplyCL {
+public final class MultiplyCL {
 	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(MultiplyCL.class);
 	
