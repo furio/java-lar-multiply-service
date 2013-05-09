@@ -5,7 +5,7 @@ import it.cvdlab.lar.model.CsrMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class CLInputSizeEstimator {
+final class CLInputSizeEstimator {
 	@SuppressWarnings("unused")
 	private static final Logger logger = LoggerFactory.getLogger(CLInputSizeEstimator.class);
 	private static final int BIT_PER_BYTES = Byte.SIZE;

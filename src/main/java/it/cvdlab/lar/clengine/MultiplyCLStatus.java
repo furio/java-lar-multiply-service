@@ -11,7 +11,7 @@ import com.nativelibs4java.opencl.CLBuffer;
 import com.nativelibs4java.opencl.CLContext;
 import com.nativelibs4java.opencl.CLMem;
 
-public final class MultiplyCLStatus {
+final class MultiplyCLStatus {
 	// qui il context
 	private CLContext context = null;
 	
