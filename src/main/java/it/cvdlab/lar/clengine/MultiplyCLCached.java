@@ -13,13 +13,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
-import com.nativelibs4java.opencl.CLBuffer;
 import com.nativelibs4java.opencl.CLContext;
 import com.nativelibs4java.opencl.CLDevice;
 import com.nativelibs4java.opencl.CLEvent;
 import com.nativelibs4java.opencl.CLException;
 import com.nativelibs4java.opencl.CLKernel;
-import com.nativelibs4java.opencl.CLMem;
 import com.nativelibs4java.opencl.CLMem.Usage;
 import com.nativelibs4java.opencl.CLPlatform.DeviceFeature;
 import com.nativelibs4java.opencl.CLProgram;
@@ -32,17 +30,17 @@ public final class MultiplyCLCached {
 	private static final Logger logger = LoggerFactory.getLogger(MultiplyCLCached.class);
 	
 	// String settings
-    private static final String PROPERTY_NNZWEIGHT = MultiplyCLCached.class.getPackage().getName()
+    private static final String PROPERTY_NNZWEIGHT = MultiplyCL.class.getPackage().getName()
             + ".nnzWeight";
-    private static final String PROPERTY_USECOO = MultiplyCLCached.class.getPackage().getName()
+    private static final String PROPERTY_USECOO = MultiplyCL.class.getPackage().getName()
             + ".useCOO";
-    private static final String PROPERTY_NOCL = MultiplyCLCached.class.getPackage().getName()
+    private static final String PROPERTY_NOCL = MultiplyCL.class.getPackage().getName()
             + ".noOpenCL";
-    private static final String PROPERTY_FORCEGPUCX = MultiplyCLCached.class.getPackage().getName()
+    private static final String PROPERTY_FORCEGPUCX = MultiplyCL.class.getPackage().getName()
             + ".forceGPU";    
-    private static final String PROPERTY_USEDEVICEMEM = MultiplyCLCached.class.getPackage().getName()
+    private static final String PROPERTY_USEDEVICEMEM = MultiplyCL.class.getPackage().getName()
             + ".useDeviceMem";
-    private static final String PROPERTY_FORCEGC = MultiplyCLCached.class.getPackage().getName()
+    private static final String PROPERTY_FORCEGC = MultiplyCL.class.getPackage().getName()
             + ".forceGC";      
 	
     // 
@@ -108,7 +106,7 @@ public final class MultiplyCLCached {
 		// Init cache object
 		MultiplyCLStatus clCache = new MultiplyCLStatus();
 		clCache.setMatrixA(matrixA);
-		clCache.setMatrixA(matrixB);
+		clCache.setMatrixB(matrixB);
 		
 		try {
 			// clCache.setNnz( matrixA.nnzMultiplyCount(matrixB) );
@@ -127,10 +125,10 @@ public final class MultiplyCLCached {
 		CsrMatrix resultMatrix = null;
 		if ( USECOO || ((matrixA.getRowCount() * matrixB.getColCount()) > ( clCache.getNnz() * NNZ_WEIGHT )) ) {
 			System.err.println("COO Way");
-//			resultMatrix = clMultiplyCOO(matrixA, matrixB, nnzCount);
+			resultMatrix = clMultiplyCOO(clCache);
 		} else {
 			System.err.println("Dense Way");
-			resultMatrix = clMultiply(matrixA, matrixB);
+			resultMatrix = clMultiply(clCache);
 		}
 		
 		if ( FORCE_GC ) {
@@ -149,93 +147,63 @@ public final class MultiplyCLCached {
 		}
 	}
 	
-	private static CsrMatrix clMultiply(CsrMatrix matrixA, CsrMatrix matrixBToTranspose) {
-		// Lista di CL buffer da deallocare
-		List<CLMem> buffersRelease = Lists.newArrayList();
-		@SuppressWarnings("rawtypes")
-		List<Pointer> pointersRelease = Lists.newArrayList();
+	private static CsrMatrix clMultiply(MultiplyCLStatus clCache) {
+		CsrMatrix matrixA = clCache.getMatrixA();
+		CsrMatrix matrixBToTranspose = clCache.getMatrixB();
 		
-		CLContext context = createContext();
-		
-		if (context == null) {
-			clearAllocatedCLObjects(buffersRelease);
-			clearAllocatedPTRObjects(pointersRelease);
+		if (clCache.getContext() == null) {
+			clCache.free();
 
 			return null;    	
         }
+		// Context
+
 		
 		// WorkGroupSize
 		long maxWorkGroupSize = Long.MAX_VALUE;
-		for(CLDevice currDev: context.getDevices() ) {
+		for(CLDevice currDev: clCache.getContext().getDevices() ) {
 			maxWorkGroupSize = Math.min(maxWorkGroupSize, currDev.getMaxWorkGroupSize());
 		}
 		
-        CLQueue queue = context.createDefaultQueue();
-        ByteOrder byteOrder = context.getByteOrder();
+        CLQueue queue = clCache.getContext().createDefaultQueue();
+        ByteOrder byteOrder = clCache.getContext().getByteOrder();
         
         CsrMatrix matrixB = matrixBToTranspose.transpose();
         boolean isBinary = matrixA.isBinary() && matrixB.isBinary();
         
         // Native memory
-        Pointer<Float> matA_data = null, matB_data = null;
-        Pointer<Integer> matA_rowptr, matA_colindices, matB_rowptr, matB_colindices;
+        // Pointer<Float> matA_data = null, matB_data = null;
+        // Pointer<Integer> matA_rowptr, matA_colindices, matB_rowptr, matB_colindices;
         
         // Allocate
-        matA_rowptr = Pointer.allocateInts(matrixA.getRowptr().size()).order(byteOrder);
-        pointersRelease.add(matA_rowptr);
-        matA_colindices = Pointer.allocateInts(matrixA.getColdata().size()).order(byteOrder);
-        pointersRelease.add(matA_colindices);
-        matB_rowptr = Pointer.allocateInts(matrixB.getRowptr().size()).order(byteOrder);
-        pointersRelease.add(matB_rowptr);
-        matB_colindices = Pointer.allocateInts(matrixB.getColdata().size()).order(byteOrder);
-        pointersRelease.add(matB_colindices);
         if (!isBinary) {
-        	matA_data = Pointer.allocateFloats(matrixA.getData().size()).order(byteOrder);
-        	pointersRelease.add(matA_data);
-        	matB_data = Pointer.allocateFloats(matrixB.getData().size()).order(byteOrder);
-        	pointersRelease.add(matB_data);
+            clCache.setPointerFloat( "matA_data", Pointer.allocateFloats(matrixA.getData().size()).order(byteOrder) );
+            clCache.setPointerFloat( "matB_data", Pointer.allocateFloats(matrixB.getData().size()).order(byteOrder) );
         }
-        
-        copyToPointer(matrixA.getRowptr(), matA_rowptr);
-        copyToPointer(matrixA.getColdata(), matA_colindices);
-        copyToPointer(matrixB.getRowptr(), matB_rowptr);
-        copyToPointer(matrixB.getColdata(), matB_colindices);
+
         if (!isBinary) {
-        	copyToPointer(matrixA.getData(), matA_data);
-        	copyToPointer(matrixB.getData(), matB_data);
+        	copyToPointer(matrixA.getData(), clCache.getPointerFloat( "matA_data" ) );
+        	copyToPointer(matrixB.getData(), clCache.getPointerFloat( "matB_data" ) );
         }
         
         
         // CLBuffers
-        CLBuffer<Integer> cl_matA_rowptr = null, cl_matA_colindices = null, cl_matB_rowptr = null, cl_matB_colindices = null;
-        CLBuffer<Float> cl_matA_data = null, cl_matB_data = null;
-        CLBuffer<Float> cl_output_data = null;
+        //  CLBuffer<Integer> cl_matA_rowptr = null, cl_matA_colindices = null, cl_matB_rowptr = null, cl_matB_colindices = null;
+        // CLBuffer<Float> cl_matA_data = null, cl_matB_data = null;
+        // CLBuffer<Float> cl_output_data = null;
         
         try {
-            cl_matA_rowptr = context.createBuffer(Usage.Input, matA_rowptr, USE_DEVICE_MEM);
-            buffersRelease.add(cl_matA_rowptr);
-            cl_matA_colindices = context.createBuffer(Usage.Input, matA_colindices, USE_DEVICE_MEM);
-            buffersRelease.add(cl_matA_colindices);
-            cl_matB_rowptr = context.createBuffer(Usage.Input, matB_rowptr, USE_DEVICE_MEM);
-            buffersRelease.add(cl_matB_rowptr);
-            cl_matB_colindices = context.createBuffer(Usage.Input, matB_colindices, USE_DEVICE_MEM);
-            buffersRelease.add(cl_matB_colindices);
             if (!isBinary) {
-            	cl_matA_data = context.createBuffer(Usage.Input, matA_data, USE_DEVICE_MEM);
-            	buffersRelease.add(cl_matA_data);
-            	cl_matB_data = context.createBuffer(Usage.Input, matB_data, USE_DEVICE_MEM);
-            	buffersRelease.add(cl_matB_data);
+            	clCache.setBufferFloat( "cl_matA_data", clCache.getContext().createBuffer(Usage.Input, clCache.getPointerFloat( "matA_data" ), USE_DEVICE_MEM) );
+            	clCache.setBufferFloat( "cl_matB_data", clCache.getContext().createBuffer(Usage.Input, clCache.getPointerFloat( "matB_data" ), USE_DEVICE_MEM) );
             }
             
             // Output buffer
-            cl_output_data = context.createFloatBuffer(Usage.Output, matrixA.getRowCount()*matrixBToTranspose.getColCount());
-            buffersRelease.add(cl_output_data);
+            clCache.setBufferFloat( "cl_output_data", clCache.getContext().createFloatBuffer(Usage.Output, matrixA.getRowCount()*matrixBToTranspose.getColCount() ) );
         } catch (CLException e) {
 			queue.flush();
 			queue.release();
-			clearAllocatedCLObjects(buffersRelease);
-			clearAllocatedPTRObjects(pointersRelease);
-			context.release();
+			clCache.free();
 			
 			System.err.println(e.toString());
 			return null;        	
@@ -249,9 +217,7 @@ public final class MultiplyCLCached {
 		} catch (IOException e) {
 			queue.flush();
 			queue.release();
-			clearAllocatedCLObjects(buffersRelease);
-			clearAllocatedPTRObjects(pointersRelease);
-			context.release();
+			clCache.free();
 			
 			System.err.println(e.toString());
 			return null;
@@ -261,26 +227,30 @@ public final class MultiplyCLCached {
         
     	// System.out.println(kernelSource);
         
-        CLProgram program = context.createProgram(kernelSource);
+        CLProgram program = clCache.getContext().createProgram(kernelSource);
 
         // Get and call the kernel :
         CLKernel multiplyMatrixKernel = null;
         if (!isBinary) {
         	multiplyMatrixKernel = program.createKernel("spmm_kernel_naive");
-        	multiplyMatrixKernel.setArgs(cl_matA_rowptr,
-        			cl_matA_colindices,
-        			cl_matA_data,
-        			cl_matB_rowptr,
-        			cl_matB_colindices,
-        			cl_matB_data,
-        			cl_output_data);
+        	multiplyMatrixKernel.setArgs(
+        			clCache.getBufferInteger("cl_matA_rowptr"),
+        			clCache.getBufferInteger("cl_matA_colindices"),
+        			clCache.getBufferFloat("cl_matA_data"),
+        			clCache.getBufferInteger("cl_matB_rowptr"),
+        			clCache.getBufferInteger("cl_matB_colindices"),
+        			clCache.getBufferFloat("cl_matB_data"),
+        			clCache.getBufferFloat("cl_output_data")
+        			);
         } else {
         	multiplyMatrixKernel = program.createKernel("spmm_binary_kernel_naive");
-        	multiplyMatrixKernel.setArgs(cl_matA_rowptr,
-        			cl_matA_colindices,
-        			cl_matB_rowptr,
-        			cl_matB_colindices,
-        			cl_output_data);
+        	multiplyMatrixKernel.setArgs(
+        			clCache.getBufferInteger("cl_matA_rowptr"),
+        			clCache.getBufferInteger("cl_matA_colindices"),
+        			clCache.getBufferInteger("cl_matB_rowptr"),
+        			clCache.getBufferInteger("cl_matB_colindices"),
+        			clCache.getBufferFloat("cl_output_data")
+        			);
         }
         
         List<int[]> niceSizes;
@@ -291,9 +261,7 @@ public final class MultiplyCLCached {
 			queue.release();
 			multiplyMatrixKernel.release();
 			program.release();
-			clearAllocatedCLObjects(buffersRelease);
-			clearAllocatedPTRObjects(pointersRelease);
-			context.release();
+			clCache.free();
 			
 			System.err.println(e.toString());
 			return null;
@@ -302,21 +270,18 @@ public final class MultiplyCLCached {
         // queue.finish();
         CLEvent addEvt = multiplyMatrixKernel.enqueueNDRange(queue, niceSizes.get(0), niceSizes.get(1));
         
-        Pointer<Float> matrixDataOut = cl_output_data.read(queue, addEvt);
-        pointersRelease.add(matrixDataOut);
+        clCache.setPointerFloat( "matrixDataOut", clCache.getBufferFloat("cl_output_data").read(queue, addEvt) );
         // Pointer<Float> matrixDataOut = Pointer.allocateFloats(matrixA.getRowCount()*matrixBToTranspose.getColCount()).order(byteOrder);
         // cl_output_data.read(queue, matrixDataOut, true, addEvt);
         
-        List<Float> listMatrixOut = copyFromPointerFloat(matrixDataOut);
+        List<Float> listMatrixOut = copyFromPointerFloat( clCache.getPointerFloat( "matrixDataOut") );
         
         addEvt.release();
         queue.flush();
         queue.release();
 		multiplyMatrixKernel.release();
 		program.release();
-		clearAllocatedCLObjects(buffersRelease);
-		clearAllocatedPTRObjects(pointersRelease);
-		context.release();
+		clCache.free();
         
 		// System.out.println(listMatrixOut);
 		
@@ -324,18 +289,13 @@ public final class MultiplyCLCached {
 	}
 	
 	
-	private static CsrMatrix clMultiplyCOO(CsrMatrix matrixA, CsrMatrix matrixBToTranspose, int nnzCount) {
-		// Lista di CL buffer da deallocare
-		List<CLMem> buffersRelease = Lists.newArrayList();
-		@SuppressWarnings("rawtypes")
-		List<Pointer> pointersRelease = Lists.newArrayList();
+	private static CsrMatrix clMultiplyCOO(MultiplyCLStatus clCache) {
+		CsrMatrix matrixA = clCache.getMatrixA();
+		CsrMatrix matrixBToTranspose = clCache.getMatrixB();
+		int nnzCount = clCache.getNnz();
 		
-		//
-		CLContext context = createContext();
-		
-		if (context == null) {
-			clearAllocatedCLObjects(buffersRelease);
-			clearAllocatedPTRObjects(pointersRelease);
+		if (clCache.getContext() == null) {
+			clCache.free();
 
 			return null;    	
         }
@@ -344,82 +304,53 @@ public final class MultiplyCLCached {
 		
 		// WorkGroupSize
 		long maxWorkGroupSize = Long.MAX_VALUE;
-		for(CLDevice currDev: context.getDevices() ) {
+		for(CLDevice currDev: clCache.getContext().getDevices() ) {
 			maxWorkGroupSize = Math.min(maxWorkGroupSize, currDev.getMaxWorkGroupSize());
 		}
 		
-        CLQueue queue = context.createDefaultQueue();
-        ByteOrder byteOrder = context.getByteOrder();
+        CLQueue queue = clCache.getContext().createDefaultQueue();
+        ByteOrder byteOrder = clCache.getContext().getByteOrder();
         
         CsrMatrix matrixB = matrixBToTranspose.transpose();
         boolean isBinary = matrixA.isBinary() && matrixB.isBinary();
         
         // Native memory
-        Pointer<Float> matA_data = null, matB_data = null;
-        Pointer<Integer> counter, matA_rowptr, matA_colindices, matB_rowptr, matB_colindices;
+        // Pointer<Float> matA_data = null, matB_data = null;
+        // Pointer<Integer> counter, matA_rowptr, matA_colindices, matB_rowptr, matB_colindices;
         
         // Allocate
-        counter = Pointer.allocateInt().order(byteOrder);
-        counter.set(0);
-        pointersRelease.add(counter);
-        matA_rowptr = Pointer.allocateInts(matrixA.getRowptr().size()).order(byteOrder);
-        pointersRelease.add(matA_rowptr);
-        matA_colindices = Pointer.allocateInts(matrixA.getColdata().size()).order(byteOrder);
-        pointersRelease.add(matA_colindices);
-        matB_rowptr = Pointer.allocateInts(matrixB.getRowptr().size()).order(byteOrder);
-        pointersRelease.add(matB_rowptr);
-        matB_colindices = Pointer.allocateInts(matrixB.getColdata().size()).order(byteOrder);
-        pointersRelease.add(matB_colindices);
+        clCache.setPointerInteger("counter", Pointer.allocateInt().order(byteOrder) );
+        clCache.getPointerInteger("counter").set(0);
         if (!isBinary) {
-        	matA_data = Pointer.allocateFloats(matrixA.getData().size()).order(byteOrder);
-        	pointersRelease.add(matA_data);
-        	matB_data = Pointer.allocateFloats(matrixB.getData().size()).order(byteOrder);
-        	pointersRelease.add(matB_data);
+            clCache.setPointerFloat( "matA_data", Pointer.allocateFloats(matrixA.getData().size()).order(byteOrder) );
+            clCache.setPointerFloat( "matB_data", Pointer.allocateFloats(matrixB.getData().size()).order(byteOrder) );
         }
-        
-        copyToPointer(matrixA.getRowptr(), matA_rowptr);
-        copyToPointer(matrixA.getColdata(), matA_colindices);
-        copyToPointer(matrixB.getRowptr(), matB_rowptr);
-        copyToPointer(matrixB.getColdata(), matB_colindices);
+
         if (!isBinary) {
-        	copyToPointer(matrixA.getData(), matA_data);
-        	copyToPointer(matrixB.getData(), matB_data);
+        	copyToPointer(matrixA.getData(), clCache.getPointerFloat( "matA_data" ) );
+        	copyToPointer(matrixB.getData(), clCache.getPointerFloat( "matB_data" ) );
         }
         
         
         // CLBuffers
-        CLBuffer<Integer> cl_counter = null, cl_matA_rowptr = null, cl_matA_colindices = null, cl_matB_rowptr = null, cl_matB_colindices = null;
-        CLBuffer<Float> cl_matA_data = null, cl_matB_data = null;
-        CLBuffer<Float> cl_output_data = null;
+        // CLBuffer<Integer> cl_counter = null, cl_matA_rowptr = null, cl_matA_colindices = null, cl_matB_rowptr = null, cl_matB_colindices = null;
+        // CLBuffer<Float> cl_matA_data = null, cl_matB_data = null;
+        // CLBuffer<Float> cl_output_data = null;
         
         try {
         	// Always use device mem for the counter
-        	cl_counter = context.createBuffer(Usage.InputOutput, counter);
-        	buffersRelease.add(cl_counter);
-            cl_matA_rowptr = context.createBuffer(Usage.Input, matA_rowptr, USE_DEVICE_MEM);
-            buffersRelease.add(cl_matA_rowptr);
-            cl_matA_colindices = context.createBuffer(Usage.Input, matA_colindices, USE_DEVICE_MEM);
-            buffersRelease.add(cl_matA_colindices);
-            cl_matB_rowptr = context.createBuffer(Usage.Input, matB_rowptr, USE_DEVICE_MEM);
-            buffersRelease.add(cl_matB_rowptr);
-            cl_matB_colindices = context.createBuffer(Usage.Input, matB_colindices,USE_DEVICE_MEM);
-            buffersRelease.add(cl_matB_colindices);
+        	clCache.setBufferInteger( "cl_counter", clCache.getContext().createBuffer(Usage.InputOutput, clCache.getPointerInteger("counter")) );
             if (!isBinary) {
-            	cl_matA_data = context.createBuffer(Usage.Input, matA_data, USE_DEVICE_MEM);
-            	buffersRelease.add(cl_matA_data);
-            	cl_matB_data = context.createBuffer(Usage.Input, matB_data, USE_DEVICE_MEM);
-            	buffersRelease.add(cl_matB_data);
+            	clCache.setBufferFloat( "cl_matA_data", clCache.getContext().createBuffer(Usage.Input, clCache.getPointerFloat( "matA_data" ), USE_DEVICE_MEM) );
+            	clCache.setBufferFloat( "cl_matB_data", clCache.getContext().createBuffer(Usage.Input, clCache.getPointerFloat( "matB_data" ), USE_DEVICE_MEM) );
             }
             
             // Output buffer
-            cl_output_data = context.createFloatBuffer(Usage.Output, nnzCount*3); //float3
-            buffersRelease.add(cl_output_data);
+            clCache.setBufferFloat( "cl_output_data", clCache.getContext().createFloatBuffer(Usage.Output, nnzCount*3) );
         } catch (CLException e) {
         	queue.flush();
 			queue.release();
-			clearAllocatedCLObjects(buffersRelease);
-			clearAllocatedPTRObjects(pointersRelease);
-			context.release();
+			clCache.free();
 			
 			System.err.println(e.toString());
 			return null;    	
@@ -433,9 +364,7 @@ public final class MultiplyCLCached {
 		} catch (IOException e) {
 			queue.flush();
 			queue.release();
-			clearAllocatedCLObjects(buffersRelease);
-			clearAllocatedPTRObjects(pointersRelease);
-			context.release();
+			clCache.free();
 			
 			System.err.println(e.toString());
 			return null;
@@ -445,28 +374,32 @@ public final class MultiplyCLCached {
         
     	// System.out.println(kernelSource);
         
-        CLProgram program = context.createProgram(kernelSource);
+        CLProgram program = clCache.getContext().createProgram(kernelSource);
 
         // Get and call the kernel :
         CLKernel multiplyMatrixKernel = null;
         if (!isBinary) {
         	multiplyMatrixKernel = program.createKernel("spmm_coo_kernel_naive");
-        	multiplyMatrixKernel.setArgs(cl_matA_rowptr,
-        			cl_matA_colindices,
-        			cl_matA_data,
-        			cl_matB_rowptr,
-        			cl_matB_colindices,
-        			cl_matB_data,
-        			cl_counter,
-        			cl_output_data);
+        	multiplyMatrixKernel.setArgs(
+        			clCache.getBufferInteger("cl_matA_rowptr"),
+        			clCache.getBufferInteger("cl_matA_colindices"),
+        			clCache.getBufferFloat("cl_matA_data"),
+        			clCache.getBufferInteger("cl_matB_rowptr"),
+        			clCache.getBufferInteger("cl_matB_colindices"),
+        			clCache.getBufferFloat("cl_matB_data"),
+        			clCache.getBufferInteger("cl_counter"),
+        			clCache.getBufferFloat("cl_output_data")
+        			);
         } else {
         	multiplyMatrixKernel = program.createKernel("spmm_coo_binary_kernel_naive");
-        	multiplyMatrixKernel.setArgs(cl_matA_rowptr,
-        			cl_matA_colindices,
-        			cl_matB_rowptr,
-        			cl_matB_colindices,
-        			cl_counter,
-        			cl_output_data);
+        	multiplyMatrixKernel.setArgs(
+        			clCache.getBufferInteger("cl_matA_rowptr"),
+       				clCache.getBufferInteger("cl_matA_colindices"),
+        			clCache.getBufferInteger("cl_matB_rowptr"),
+        			clCache.getBufferInteger("cl_matB_colindices"),
+        			clCache.getBufferInteger("cl_counter"),
+        			clCache.getBufferFloat("cl_output_data")
+        			);
         }
         
         List<int[]> niceSizes;
@@ -477,9 +410,7 @@ public final class MultiplyCLCached {
 			queue.release();
 			multiplyMatrixKernel.release();
 			program.release();
-			clearAllocatedCLObjects(buffersRelease);
-			clearAllocatedPTRObjects(pointersRelease);
-			context.release();
+			clCache.free();
 			
 			System.err.println(e.toString());
 			return null;
@@ -489,36 +420,31 @@ public final class MultiplyCLCached {
         CLEvent addEvt = multiplyMatrixKernel.enqueueNDRange(queue, niceSizes.get(0), niceSizes.get(1));
         
        
-        Pointer<Float> matrixDataOut = cl_output_data.read(queue, addEvt);
-        pointersRelease.add(matrixDataOut);
+        clCache.setPointerFloat( "matrixDataOut", clCache.getBufferFloat("cl_output_data").read(queue, addEvt) );
         // Pointer<Float> matrixDataOut = Pointer.allocateFloats(matrixA.getRowCount()*matrixBToTranspose.getColCount()).order(byteOrder);
         // cl_output_data.read(queue, matrixDataOut, true, addEvt);
         
-        List<Float> listMatrixOut = copyFromPointerFloat(matrixDataOut);
+        List<Float> listMatrixOut = copyFromPointerFloat( clCache.getPointerFloat( "matrixDataOut") );
 		
         addEvt.release();
         queue.flush();
         queue.release();
 		multiplyMatrixKernel.release();
 		program.release();
-		clearAllocatedCLObjects(buffersRelease);
-		clearAllocatedPTRObjects(pointersRelease);
-		context.release();
+		clCache.free();
 		
 		return CsrMatrix.fromCOOArray(listMatrixOut, matrixA.getRowshape(), matrixBToTranspose.getColshape());
 	}
 	
 	private static int clCalcNNZ(MultiplyCLStatus clCache) {
+		// Context
 		clCache.setContext( createContext() );
-		
 		
 		if (clCache.getContext() == null) {
 			clCache.free();
 
 			return -1;    	
         }
-		// Context
-
 		
 		// WorkGroupSize
 		long maxWorkGroupSize = Long.MAX_VALUE;
@@ -629,10 +555,6 @@ public final class MultiplyCLCached {
 		
 		clCache.releaseSingleCL("cl_counter");
 		clCache.releaseSinglePTR("counter");
-		// Release only
-//		clearAllocatedCLObjects(buffersRelease);
-//		clearAllocatedPTRObjects(pointersRelease);
-//		context.release();
         
         return resultCount;
 	}
@@ -676,24 +598,7 @@ public final class MultiplyCLCached {
 			tmpList.add( new Float(singleData) );
 		}
 		return Lists.newArrayList(tmpList);
-	}		
-	
-	private static void clearAllocatedCLObjects(List<CLMem> listOfObjects) {
-		System.err.println("Clearing CLMEM");
-		for(CLMem buffObject: listOfObjects) {
-			buffObject.release();
-		}
-		listOfObjects.clear();
 	}
-	
-	@SuppressWarnings("rawtypes")
-	private static void clearAllocatedPTRObjects(List<Pointer> listOfObjects) {
-		System.err.println("Clearing POINTERS");
-		for(Pointer buffObject: listOfObjects) {
-			buffObject.release();
-		}
-		listOfObjects.clear();
-	}	
 	
 	public static void main(String[] args) throws Exception {
 //		int[] matrixOne = new int[]{1,0,0,0,1,0,1,0,0,0,0,0,0,0,1,0,0,1,1,0};

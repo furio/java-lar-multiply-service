@@ -17,7 +17,6 @@ public final class MultiplyCLStatus {
 	
 	//
 	private Map<String,CLMem> buffersRelease = Maps.newHashMap();
-	@SuppressWarnings("rawtypes")
 	private Map<String,Pointer<Integer>> pointersIntegerRelease = Maps.newHashMap();
 	private Map<String,Pointer<Float>> pointersFloatRelease = Maps.newHashMap();
 	// =======================
@@ -33,8 +32,13 @@ public final class MultiplyCLStatus {
     public void free() {
 		clearAllocatedCLObjects();
 		clearAllocatedPTRObjects();
-		context.release();
+		if (context != null) {
+			context.release();
+		}
 		context = null;
+		//
+		a = null;
+		b = null;
     }
     
     public void releaseSingleCL(String key) {
@@ -75,6 +79,7 @@ public final class MultiplyCLStatus {
 		this.pointersFloatRelease.clear();		
 	}
 
+	@SuppressWarnings("unused")
 	private Map<String, Pointer<Integer>> getPointersIntegerRelease() {
 		return pointersIntegerRelease;
 	}
@@ -87,6 +92,7 @@ public final class MultiplyCLStatus {
 		return pointersIntegerRelease.put(key,value);
 	}
 
+	@SuppressWarnings("unused")
 	private Map<String, Pointer<Float>> getPointersFloatRelease() {
 		return pointersFloatRelease;
 	}
