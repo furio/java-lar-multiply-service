@@ -30,78 +30,17 @@ public final class MultiplyCL {
 	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(MultiplyCL.class);
 	
-	// String settings
-    private static final String PROPERTY_NNZWEIGHT = MultiplyCL.class.getPackage().getName()
-            + ".nnzWeight";
-    private static final String PROPERTY_USECOO = MultiplyCL.class.getPackage().getName()
-            + ".useCOO";
-    private static final String PROPERTY_NOCL = MultiplyCL.class.getPackage().getName()
-            + ".noOpenCL";
-    private static final String PROPERTY_FORCEGPUCX = MultiplyCL.class.getPackage().getName()
-            + ".forceGPU";    
-    private static final String PROPERTY_USEDEVICEMEM = MultiplyCL.class.getPackage().getName()
-            + ".useDeviceMem";
-    private static final String PROPERTY_FORCEGC = MultiplyCL.class.getPackage().getName()
-            + ".forceGC";      
-	
-    // 
-	private static int NNZ_WEIGHT = 3;
-	private static boolean USECOO = false;
-	private static boolean NO_OPENCL = false;
-	private static boolean FORCE_GPU = true;
-	private static boolean USE_DEVICE_MEM = true;
-	private static boolean FORCE_GC = false;
-	
-	static {
-		String nnzWeight = System.getProperty(PROPERTY_NNZWEIGHT);
-		String useCOO = System.getProperty(PROPERTY_USECOO);
-		String noOpenCL = System.getProperty(PROPERTY_NOCL);
-		String forceGPU = System.getProperty(PROPERTY_FORCEGPUCX);
-		String deviceMem = System.getProperty(PROPERTY_USEDEVICEMEM);
-		String forceGC = System.getProperty(PROPERTY_FORCEGC);
-		
-		if (nnzWeight != null) {
-			try{
-				int value = Integer.valueOf(nnzWeight);
-				if (value >= 1) {
-					System.out.println(PROPERTY_NNZWEIGHT+ ": " + value);
-					NNZ_WEIGHT = value;
-				}
-			} catch(NumberFormatException e) {
-				
-			}
-		}
-		
-		if (useCOO != null) {
-			USECOO = Boolean.valueOf(useCOO);
-			System.out.println(PROPERTY_USECOO+ ": " + USECOO);
-		}
-		
-		if (noOpenCL != null) {
-			NO_OPENCL = Boolean.valueOf(noOpenCL);
-			System.out.println(PROPERTY_NOCL+ ": " + NO_OPENCL);
-		}
-
-		if (deviceMem != null) {
-			USE_DEVICE_MEM = Boolean.valueOf(deviceMem);
-			System.out.println(PROPERTY_USEDEVICEMEM+ ": " + USE_DEVICE_MEM);		
-		}
-		
-		if (forceGPU != null) {
-			FORCE_GPU = Boolean.valueOf(forceGPU);
-			System.out.println(PROPERTY_FORCEGPUCX+ ": " + FORCE_GPU);
-		}
-		
-		if (forceGC != null) {
-			FORCE_GC = Boolean.valueOf(forceGC);
-			System.out.println(PROPERTY_FORCEGC+ ": " + FORCE_GC);
-		}		
-	}
-	
 	public static synchronized CsrMatrix multiply(CsrMatrix matrixA, CsrMatrix matrixB) {
 		// Js-like computation
-		if (NO_OPENCL) {
+		if (CLEngineConfig.isNO_OPENCL()) {
+			System.err.println("== JS Multiply ==");
 			return jsMultiply(matrixA, matrixB);
+		}
+		
+		// Use the cached shared object way
+		if (CLEngineConfig.isSHARED_CL()) {
+			System.err.println("== Cached CL ==");
+			return MultiplyCLCached.multiply(matrixA, matrixB);
 		}
 		
 		// Go through OpenCL
@@ -123,7 +62,7 @@ public final class MultiplyCL {
 		System.err.println("NNZ Res: " + nnzCount);
 		
 		CsrMatrix resultMatrix = null;
-		if ( USECOO || ((matrixA.getRowCount() * matrixB.getColCount()) > ( nnzCount * NNZ_WEIGHT )) ) {
+		if ( CLEngineConfig.isUSECOO() || ((matrixA.getRowCount() * matrixB.getColCount()) > ( nnzCount * CLEngineConfig.getNNZ_WEIGHT() )) ) {
 			System.err.println("COO Way");
 			resultMatrix = clMultiplyCOO(matrixA, matrixB, nnzCount);
 		} else {
@@ -131,7 +70,7 @@ public final class MultiplyCL {
 			resultMatrix = clMultiply(matrixA, matrixB);
 		}
 		
-		if ( FORCE_GC ) {
+		if ( CLEngineConfig.isFORCE_GC() ) {
 			System.gc();
 			System.gc();
 		}
@@ -210,18 +149,18 @@ public final class MultiplyCL {
         CLBuffer<Float> cl_output_data = null;
         
         try {
-            cl_matA_rowptr = context.createBuffer(Usage.Input, matA_rowptr, USE_DEVICE_MEM);
+            cl_matA_rowptr = context.createBuffer(Usage.Input, matA_rowptr, CLEngineConfig.isUSE_DEVICE_MEM());
             buffersRelease.add(cl_matA_rowptr);
-            cl_matA_colindices = context.createBuffer(Usage.Input, matA_colindices, USE_DEVICE_MEM);
+            cl_matA_colindices = context.createBuffer(Usage.Input, matA_colindices, CLEngineConfig.isUSE_DEVICE_MEM());
             buffersRelease.add(cl_matA_colindices);
-            cl_matB_rowptr = context.createBuffer(Usage.Input, matB_rowptr, USE_DEVICE_MEM);
+            cl_matB_rowptr = context.createBuffer(Usage.Input, matB_rowptr, CLEngineConfig.isUSE_DEVICE_MEM());
             buffersRelease.add(cl_matB_rowptr);
-            cl_matB_colindices = context.createBuffer(Usage.Input, matB_colindices, USE_DEVICE_MEM);
+            cl_matB_colindices = context.createBuffer(Usage.Input, matB_colindices, CLEngineConfig.isUSE_DEVICE_MEM());
             buffersRelease.add(cl_matB_colindices);
             if (!isBinary) {
-            	cl_matA_data = context.createBuffer(Usage.Input, matA_data, USE_DEVICE_MEM);
+            	cl_matA_data = context.createBuffer(Usage.Input, matA_data, CLEngineConfig.isUSE_DEVICE_MEM());
             	buffersRelease.add(cl_matA_data);
-            	cl_matB_data = context.createBuffer(Usage.Input, matB_data, USE_DEVICE_MEM);
+            	cl_matB_data = context.createBuffer(Usage.Input, matB_data, CLEngineConfig.isUSE_DEVICE_MEM());
             	buffersRelease.add(cl_matB_data);
             }
             
@@ -394,18 +333,18 @@ public final class MultiplyCL {
         	// Always use device mem for the counter
         	cl_counter = context.createBuffer(Usage.InputOutput, counter);
         	buffersRelease.add(cl_counter);
-            cl_matA_rowptr = context.createBuffer(Usage.Input, matA_rowptr, USE_DEVICE_MEM);
+            cl_matA_rowptr = context.createBuffer(Usage.Input, matA_rowptr, CLEngineConfig.isUSE_DEVICE_MEM());
             buffersRelease.add(cl_matA_rowptr);
-            cl_matA_colindices = context.createBuffer(Usage.Input, matA_colindices, USE_DEVICE_MEM);
+            cl_matA_colindices = context.createBuffer(Usage.Input, matA_colindices, CLEngineConfig.isUSE_DEVICE_MEM());
             buffersRelease.add(cl_matA_colindices);
-            cl_matB_rowptr = context.createBuffer(Usage.Input, matB_rowptr, USE_DEVICE_MEM);
+            cl_matB_rowptr = context.createBuffer(Usage.Input, matB_rowptr, CLEngineConfig.isUSE_DEVICE_MEM());
             buffersRelease.add(cl_matB_rowptr);
-            cl_matB_colindices = context.createBuffer(Usage.Input, matB_colindices,USE_DEVICE_MEM);
+            cl_matB_colindices = context.createBuffer(Usage.Input, matB_colindices, CLEngineConfig.isUSE_DEVICE_MEM());
             buffersRelease.add(cl_matB_colindices);
             if (!isBinary) {
-            	cl_matA_data = context.createBuffer(Usage.Input, matA_data, USE_DEVICE_MEM);
+            	cl_matA_data = context.createBuffer(Usage.Input, matA_data, CLEngineConfig.isUSE_DEVICE_MEM());
             	buffersRelease.add(cl_matA_data);
-            	cl_matB_data = context.createBuffer(Usage.Input, matB_data, USE_DEVICE_MEM);
+            	cl_matB_data = context.createBuffer(Usage.Input, matB_data, CLEngineConfig.isUSE_DEVICE_MEM());
             	buffersRelease.add(cl_matB_data);
             }
             
@@ -564,13 +503,13 @@ public final class MultiplyCL {
         	// Always use device mem for the counter
         	cl_counter = context.createBuffer(Usage.InputOutput, counter);
         	buffersRelease.add(cl_counter);
-            cl_matA_rowptr = context.createBuffer(Usage.Input, matA_rowptr, USE_DEVICE_MEM);
+            cl_matA_rowptr = context.createBuffer(Usage.Input, matA_rowptr, CLEngineConfig.isUSE_DEVICE_MEM());
             buffersRelease.add(cl_matA_rowptr);
-            cl_matA_colindices = context.createBuffer(Usage.Input, matA_colindices, USE_DEVICE_MEM);
+            cl_matA_colindices = context.createBuffer(Usage.Input, matA_colindices, CLEngineConfig.isUSE_DEVICE_MEM());
             buffersRelease.add(cl_matA_colindices);
-            cl_matB_rowptr = context.createBuffer(Usage.Input, matB_rowptr, USE_DEVICE_MEM);
+            cl_matB_rowptr = context.createBuffer(Usage.Input, matB_rowptr, CLEngineConfig.isUSE_DEVICE_MEM());
             buffersRelease.add(cl_matB_rowptr);
-            cl_matB_colindices = context.createBuffer(Usage.Input, matB_colindices,USE_DEVICE_MEM);
+            cl_matB_colindices = context.createBuffer(Usage.Input, matB_colindices, CLEngineConfig.isUSE_DEVICE_MEM());
             buffersRelease.add(cl_matB_colindices);
         } catch (CLException e) {
         	queue.flush();
@@ -657,7 +596,7 @@ public final class MultiplyCL {
 		CLContext context = null;
 		
 		try {
-			if (FORCE_GPU) {
+			if ( CLEngineConfig.isFORCE_GPU() ) {
 				context = JavaCL.createBestContext(DeviceFeature.GPU);
 			} else {
 				context = JavaCL.createBestContext();

@@ -77,6 +77,11 @@ You can edit the pom.xml directly or pass arguments to Maven command line.
 >
 > After a computation call the JVM garbage collector.
 
+##### it.cvdlab.lar.clengine.useSharedCL
+> ( _default: false_ )
+>
+> Use the cached CL routines (Experimental).
+
 ## JVM Options
 
 You might want to give more RAM (for example 8Gb) to the JVM
