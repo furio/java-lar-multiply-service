@@ -1,13 +1,13 @@
 java-lar-multiply-service
 =========================
 
-A simple REST module that performs sparse matrix multiplication through WebCL/WebGL for the [LAR](https://github.com/cvdlab/larpy)/[LAR.js](https://github.com/cvdlab/lar-demo) project
+A simple REST module that performs sparse matrix multiplication through OpenCL/OpenGL for the [LAR](https://github.com/cvdlab/larpy)/[LAR.js](https://github.com/cvdlab/lar-demo) project
 
 ## Requirements
 
-* OpenCL
-* JDK 1.6 or greater
-* Maven (version 3 or greater)
+* OpenCL 1.1 (or greater) supported platform(s)
+* JDK 1.6 (or greater)
+* Maven 3 (or greater)
 
 ## Installing
 
