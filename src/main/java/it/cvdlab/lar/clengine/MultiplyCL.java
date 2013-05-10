@@ -29,8 +29,9 @@ import com.nativelibs4java.util.IOUtils;
 public final class MultiplyCL {
 	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(MultiplyCL.class);
+	private static final int COO_CL_TYPE_LEN = 3;
 	
-	public static synchronized CsrMatrix multiply(CsrMatrix matrixA, CsrMatrix matrixB) {
+	public static synchronized CsrMatrix multiply(CsrMatrix matrixA, CsrMatrix matrixB, boolean forceCOO) {
 		// Js-like computation
 		if (CLEngineConfig.isNO_OPENCL()) {
 			System.err.println("== JS Multiply ==");
@@ -40,7 +41,7 @@ public final class MultiplyCL {
 		// Use the cached shared object way
 		if (CLEngineConfig.isSHARED_CL()) {
 			System.err.println("== Cached CL ==");
-			return MultiplyCLCached.multiply(matrixA, matrixB);
+			return MultiplyCLCached.multiply(matrixA, matrixB, forceCOO);
 		}
 		
 		// Go through OpenCL
@@ -62,7 +63,7 @@ public final class MultiplyCL {
 		System.err.println("NNZ Res: " + nnzCount);
 		
 		CsrMatrix resultMatrix = null;
-		if ( CLEngineConfig.isUSECOO() || ((matrixA.getRowCount() * matrixB.getColCount()) > ( nnzCount * CLEngineConfig.getNNZ_WEIGHT() )) ) {
+		if ( forceCOO || CLEngineConfig.isUSECOO() || ((matrixA.getRowCount() * matrixB.getColCount()) > ( nnzCount * CLEngineConfig.getNNZ_WEIGHT() )) ) {
 			System.err.println("COO Way");
 			resultMatrix = clMultiplyCOO(matrixA, matrixB, nnzCount);
 		} else {
@@ -182,7 +183,7 @@ public final class MultiplyCL {
         // Read the program sources and compile them :
         String kernelSource = null;
 		try {
-			kernelSource = IOUtils.readText(MultiplyCL.class.getResource("SpMSpM-Multiply-Naive.cl"));
+			kernelSource = IOUtils.readText(MultiplyCL.class.getResource( KernelConfig.KERNEL_DENSE ));
 		} catch (IOException e) {
 			queue.flush();
 			queue.release();
@@ -193,8 +194,8 @@ public final class MultiplyCL {
 			System.err.println(e.toString());
 			return null;
 		}
-    	kernelSource = kernelSource.replaceAll("%%AROW%%", Integer.toString( matrixA.getRowCount() ) );
-    	kernelSource = kernelSource.replaceAll("%%BCOL%%", Integer.toString( matrixB.getRowCount() ) );
+    	kernelSource = kernelSource.replaceAll(KernelConfig.DEFINE_ROW, Integer.toString( matrixA.getRowCount() ) );
+    	kernelSource = kernelSource.replaceAll(KernelConfig.DEFINE_COL, Integer.toString( matrixB.getRowCount() ) );
         
     	// System.out.println(kernelSource);
         
@@ -203,7 +204,7 @@ public final class MultiplyCL {
         // Get and call the kernel :
         CLKernel multiplyMatrixKernel = null;
         if (!isBinary) {
-        	multiplyMatrixKernel = program.createKernel("spmm_kernel_naive");
+        	multiplyMatrixKernel = program.createKernel( KernelConfig.KERNEL_DENSE_FUN_FULL );
         	multiplyMatrixKernel.setArgs(cl_matA_rowptr,
         			cl_matA_colindices,
         			cl_matA_data,
@@ -212,7 +213,7 @@ public final class MultiplyCL {
         			cl_matB_data,
         			cl_output_data);
         } else {
-        	multiplyMatrixKernel = program.createKernel("spmm_binary_kernel_naive");
+        	multiplyMatrixKernel = program.createKernel( KernelConfig.KERNEL_DENSE_FUN_SHORT );
         	multiplyMatrixKernel.setArgs(cl_matA_rowptr,
         			cl_matA_colindices,
         			cl_matB_rowptr,
@@ -349,7 +350,7 @@ public final class MultiplyCL {
             }
             
             // Output buffer
-            cl_output_data = context.createFloatBuffer(Usage.Output, nnzCount*3); //float3
+            cl_output_data = context.createFloatBuffer(Usage.Output, nnzCount*COO_CL_TYPE_LEN); //float3
             buffersRelease.add(cl_output_data);
         } catch (CLException e) {
         	queue.flush();
@@ -366,7 +367,7 @@ public final class MultiplyCL {
         // Read the program sources and compile them :
         String kernelSource = null;
 		try {
-			kernelSource = IOUtils.readText(MultiplyCL.class.getResource("SpMSpM-Multiply-COO.cl"));
+			kernelSource = IOUtils.readText(MultiplyCL.class.getResource( KernelConfig.KERNEL_COO ));
 		} catch (IOException e) {
 			queue.flush();
 			queue.release();
@@ -377,8 +378,8 @@ public final class MultiplyCL {
 			System.err.println(e.toString());
 			return null;
 		}
-    	kernelSource = kernelSource.replaceAll("%%AROW%%", Integer.toString( matrixA.getRowCount() ) );
-    	kernelSource = kernelSource.replaceAll("%%BCOL%%", Integer.toString( matrixB.getRowCount() ) );
+    	kernelSource = kernelSource.replaceAll(KernelConfig.DEFINE_ROW, Integer.toString( matrixA.getRowCount() ) );
+    	kernelSource = kernelSource.replaceAll(KernelConfig.DEFINE_COL, Integer.toString( matrixB.getRowCount() ) );
         
     	// System.out.println(kernelSource);
         
@@ -387,7 +388,7 @@ public final class MultiplyCL {
         // Get and call the kernel :
         CLKernel multiplyMatrixKernel = null;
         if (!isBinary) {
-        	multiplyMatrixKernel = program.createKernel("spmm_coo_kernel_naive");
+        	multiplyMatrixKernel = program.createKernel(KernelConfig.KERNEL_COO_FUN_FULL);
         	multiplyMatrixKernel.setArgs(cl_matA_rowptr,
         			cl_matA_colindices,
         			cl_matA_data,
@@ -397,7 +398,7 @@ public final class MultiplyCL {
         			cl_counter,
         			cl_output_data);
         } else {
-        	multiplyMatrixKernel = program.createKernel("spmm_coo_binary_kernel_naive");
+        	multiplyMatrixKernel = program.createKernel(KernelConfig.KERNEL_COO_FUN_SHORT);
         	multiplyMatrixKernel.setArgs(cl_matA_rowptr,
         			cl_matA_colindices,
         			cl_matB_rowptr,
@@ -445,6 +446,7 @@ public final class MultiplyCL {
 		return CsrMatrix.fromCOOArray(listMatrixOut, matrixA.getRowshape(), matrixBToTranspose.getColshape());
 	}
 	
+	@SuppressWarnings("unused")
 	private static int clCalcNNZ(CsrMatrix matrixA, CsrMatrix matrixBToTranspose) {
 		// Lista di CL buffer da deallocare
 		List<CLMem> buffersRelease = Lists.newArrayList();
@@ -526,7 +528,7 @@ public final class MultiplyCL {
         // Read the program sources and compile them :
         String kernelSource = null;
 		try {
-			kernelSource = IOUtils.readText(MultiplyCL.class.getResource("NNZ-Calc.cl"));
+			kernelSource = IOUtils.readText(MultiplyCL.class.getResource(KernelConfig.KERNEL_NNZ));
 		} catch (IOException e) {
 			queue.flush();
 			queue.release();
@@ -537,8 +539,8 @@ public final class MultiplyCL {
 			System.err.println(e.toString());
 			return -1;
 		}
-    	kernelSource = kernelSource.replaceAll("%%AROW%%", Integer.toString( matrixA.getRowCount() ) );
-    	kernelSource = kernelSource.replaceAll("%%BCOL%%", Integer.toString( matrixB.getRowCount() ) );
+    	kernelSource = kernelSource.replaceAll(KernelConfig.DEFINE_ROW, Integer.toString( matrixA.getRowCount() ) );
+    	kernelSource = kernelSource.replaceAll(KernelConfig.DEFINE_COL, Integer.toString( matrixB.getRowCount() ) );
         
     	// System.out.println(kernelSource);
         
@@ -547,7 +549,7 @@ public final class MultiplyCL {
         // Get and call the kernel :
         CLKernel multiplyMatrixKernel = null;
 
-       	multiplyMatrixKernel = program.createKernel("nnz_calc_kernel");
+       	multiplyMatrixKernel = program.createKernel(KernelConfig.KERNEL_NNZ_FUN);
        	multiplyMatrixKernel.setArgs(cl_matA_rowptr,
         			cl_matA_colindices,
         			cl_matB_rowptr,
@@ -658,6 +660,8 @@ public final class MultiplyCL {
 		System.out.println(csrMatrixOne);
 		System.out.println(csrMatrixTwo);
 		System.out.println("==========");
+		System.out.println(csrMatrixOne.multiply(csrMatrixTwo));
+		
 //		
 //		CsrMatrix result = multiply(csrMatrixOne, csrMatrixTwo);
 //		System.out.println(result);
@@ -681,8 +685,8 @@ public final class MultiplyCL {
 ////				CsrMatrix.fromCOOArray(ccoOutput, csrMatrixOne.getRowshape(), csrMatrixTwo.getColshape())
 ////				);
 		
-		System.out.println(csrMatrixOne.nnzMultiplyCount(csrMatrixTwo));
-		System.out.println(clCalcNNZ(csrMatrixOne, csrMatrixTwo));
+//		System.out.println(csrMatrixOne.nnzMultiplyCount(csrMatrixTwo));
+//		System.out.println(clCalcNNZ(csrMatrixOne, csrMatrixTwo));
 	}
 }
 

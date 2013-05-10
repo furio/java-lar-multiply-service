@@ -34,7 +34,7 @@ public class CsrMatrix {
 	@JsonIgnore
 	private static final int BASEINDEX = 0;
 	@JsonIgnore
-	private static final boolean USE_SPARSE_MULTIPLY = false;	
+	private static boolean USE_SPARSE_MULTIPLY = true;	
 	@JsonIgnore
 	private static final Logger logger = LoggerFactory.getLogger(CsrMatrix.class);
 	
@@ -148,7 +148,7 @@ public class CsrMatrix {
 		}
 
 		if ( USE_SPARSE_MULTIPLY ) {
-			return this.sparseMultiply(matrix);
+			return this.cooMultiply(matrix);
 		} else {
 			return this.denseMultiply(matrix);
 		}
@@ -314,6 +314,54 @@ public class CsrMatrix {
 		return new CsrMatrix(tmp_rowptr, tmp_coldata, tmp_data, tmp_rowcount, tmp_colcount);
 	}
 
+	@JsonIgnore
+	private CsrMatrix cooMultiply(CsrMatrix matrix) {
+		CsrMatrix argMatrix = matrix.transpose();
+	    List<Float> resultList = Lists.newArrayList();
+
+	    for (int i = 0; i < this.getRowshape(); i++) {
+			for (int j = 0; j < argMatrix.getRowshape(); j++) {
+
+				int ArowCur = this.getRowptr().get(i),
+					ArowEnd = this.getRowptr().get(i + 1),
+					curPosA = ArowCur;
+
+				int BrowCur = argMatrix.getRowptr().get(j),
+					BrowEnd = argMatrix.getRowptr().get(j + 1),
+					curPosB = BrowCur;
+
+				int AcurIdx = this.getColdata().get(ArowCur),
+					BcurIdx = argMatrix.getColdata().get(BrowCur);
+
+	            float localSum = 0F;
+
+	            while ((curPosA < ArowEnd) && (curPosB < BrowEnd)) {
+					AcurIdx = this.getColdata().get(curPosA);
+					BcurIdx = argMatrix.getColdata().get(curPosB);
+
+					if (AcurIdx == BcurIdx) {
+						localSum += this.getData().get(curPosA) * argMatrix.getData().get(curPosB);
+						curPosA++;
+						curPosB++;
+					} else if (AcurIdx < BcurIdx) {
+						curPosA++;
+					} else {
+						curPosB++;
+					}
+				}
+
+	            if (localSum > 0F) {
+	            	resultList.add((float)i);
+	            	resultList.add((float)j);
+	            	resultList.add(localSum);
+	            }
+	            
+			}
+		}
+
+		return fromCOOArray(resultList, this.getRowshape(), matrix.getColshape());		
+	}
+	
 	@JsonIgnore
 	private CsrMatrix denseMultiply(CsrMatrix matrix) {
 		CsrMatrix argMatrix = matrix.transpose();
