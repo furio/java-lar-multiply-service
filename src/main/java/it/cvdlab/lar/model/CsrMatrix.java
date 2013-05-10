@@ -667,7 +667,7 @@ public class CsrMatrix {
 		for(int i = 0; i < nnz; i++) {
 			currRow = (int)cooArray[i*3 + 0];
 			currCol = (int)cooArray[i*3 + 1];
-			currData = (int)cooArray[i*3 + 2];
+			currData = cooArray[i*3 + 2];
 			
 			int startIndex = rowptr.get(currRow);
 			int stopIndex = rowptr.get(currRow + 1);
