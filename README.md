@@ -96,7 +96,15 @@ You might want to give more RAM (for example 8Gb) to the JVM
 
 ## REST Endpoint
 
-The REST endpoint is (with a proper HTTP POST) http://HOST:PORT/services/multiply/execute
+The REST endpoint is (with a proper HTTP POST):
+
+* http://HOST:PORT/services/multiply/execute
+
+*or*
+
+* http://HOST:PORT/services/multiply/executeCOO
+
+The latter has the same effect of setting `it.cvdlab.lar.clengine.useCOO` to *true* for the current operation.
 
 ## License
 
