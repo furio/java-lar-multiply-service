@@ -134,7 +134,7 @@ final class MultiplyCLCached {
         // Read the program sources and compile them :
         String kernelSource = null;
 		try {
-			kernelSource = IOUtils.readText(MultiplyCLCached.class.getResource(KernelConfig.KERNEL_DENSE));
+			kernelSource = IOUtils.readText(MultiplyCLCached.class.getResource(KernelConfig.KERNEL_DENSE()));
 		} catch (IOException e) {
 			queue.flush();
 			queue.release();
@@ -174,22 +174,36 @@ final class MultiplyCLCached {
         			);
         }
         
-        List<int[]> niceSizes;
-		try {
-			niceSizes = SizeEstimator.getGoodSizes(matrixA.getRowCount(), matrixB.getRowCount(), (int) maxWorkGroupSize);
-		} catch (Exception e) {
-			queue.flush();
-			queue.release();
-			multiplyMatrixKernel.release();
-			program.release();
-			clCache.free();
-			
-			System.err.println(e.toString());
-			return null;
-		}
+        int[] wgSize;
+        int[] locSize;
+        
+        if (CLEngineConfig.isIMPL_LOCAL()) {
+        	wgSize = new int[]{matrixA.getRowCount(), matrixB.getRowCount()};
+        	locSize = null;
+        } else {
+    		try {
+    			List<int[]> niceSizes = SizeEstimator.getGoodSizes(matrixA.getRowCount(), matrixB.getRowCount(), (int) maxWorkGroupSize);
+    			wgSize = niceSizes.get(0);
+    			locSize = niceSizes.get(1);
+    		} catch (Exception e) {
+    			queue.flush();
+    			queue.release();
+    			multiplyMatrixKernel.release();
+    			program.release();
+    			clCache.free();
+    			
+    			System.err.println(e.toString());
+    			return null;
+    		}        	
+        }
 
         // queue.finish();
-        CLEvent addEvt = multiplyMatrixKernel.enqueueNDRange(queue, niceSizes.get(0), niceSizes.get(1));
+        CLEvent addEvt = null;
+        if (CLEngineConfig.isIMPL_LOCAL()) {
+        	addEvt = multiplyMatrixKernel.enqueueNDRange(queue, wgSize);
+        } else {
+        	addEvt = multiplyMatrixKernel.enqueueNDRange(queue, wgSize, locSize);
+        }
         
         clCache.setPointerFloat( "matrixDataOut", clCache.getBufferFloat("cl_output_data").read(queue, addEvt) );
         // Pointer<Float> matrixDataOut = Pointer.allocateFloats(matrixA.getRowCount()*matrixBToTranspose.getColCount()).order(byteOrder);
@@ -281,7 +295,7 @@ final class MultiplyCLCached {
         // Read the program sources and compile them :
         String kernelSource = null;
 		try {
-			kernelSource = IOUtils.readText(MultiplyCLCached.class.getResource(KernelConfig.KERNEL_COO));
+			kernelSource = IOUtils.readText(MultiplyCLCached.class.getResource(KernelConfig.KERNEL_COO()));
 		} catch (IOException e) {
 			queue.flush();
 			queue.release();
@@ -323,22 +337,36 @@ final class MultiplyCLCached {
         			);
         }
         
-        List<int[]> niceSizes;
-		try {
-			niceSizes = SizeEstimator.getGoodSizes(matrixA.getRowCount(), matrixB.getRowCount(), (int) maxWorkGroupSize);
-		} catch (Exception e) {
-			queue.flush();
-			queue.release();
-			multiplyMatrixKernel.release();
-			program.release();
-			clCache.free();
-			
-			System.err.println(e.toString());
-			return null;
-		}
+        int[] wgSize;
+        int[] locSize;
+        
+        if (CLEngineConfig.isIMPL_LOCAL()) {
+        	wgSize = new int[]{matrixA.getRowCount(), matrixB.getRowCount()};
+        	locSize = null;
+        } else {
+    		try {
+    			List<int[]> niceSizes = SizeEstimator.getGoodSizes(matrixA.getRowCount(), matrixB.getRowCount(), (int) maxWorkGroupSize);
+    			wgSize = niceSizes.get(0);
+    			locSize = niceSizes.get(1);
+    		} catch (Exception e) {
+    			queue.flush();
+    			queue.release();
+    			multiplyMatrixKernel.release();
+    			program.release();
+    			clCache.free();
+    			
+    			System.err.println(e.toString());
+    			return null;
+    		}        	
+        }
 
         // queue.finish();
-        CLEvent addEvt = multiplyMatrixKernel.enqueueNDRange(queue, niceSizes.get(0), niceSizes.get(1));
+        CLEvent addEvt = null;
+        if (CLEngineConfig.isIMPL_LOCAL()) {
+        	addEvt = multiplyMatrixKernel.enqueueNDRange(queue, wgSize);
+        } else {
+        	addEvt = multiplyMatrixKernel.enqueueNDRange(queue, wgSize, locSize);
+        }
         
        
         clCache.setPointerFloat( "matrixDataOut", clCache.getBufferFloat("cl_output_data").read(queue, addEvt) );
@@ -417,7 +445,7 @@ final class MultiplyCLCached {
         // Read the program sources and compile them :
         String kernelSource = null;
 		try {
-			kernelSource = IOUtils.readText(MultiplyCLCached.class.getResource(KernelConfig.KERNEL_NNZ));
+			kernelSource = IOUtils.readText(MultiplyCLCached.class.getResource(KernelConfig.KERNEL_NNZ()));
 		} catch (IOException e) {
 			queue.flush();
 			queue.release();
@@ -444,23 +472,36 @@ final class MultiplyCLCached {
         			clCache.getBufferInteger("cl_matB_colindices"),
         			clCache.getBufferInteger("cl_counter") );
         
-        List<int[]> niceSizes;
-		try {
-			niceSizes = SizeEstimator.getGoodSizes(matrixA.getRowCount(), matrixB.getRowCount(), (int) maxWorkGroupSize);
-		} catch (Exception e) {
-			queue.flush();
-			queue.release();
-			multiplyMatrixKernel.release();
-			program.release();
-			clCache.free();
-			
-			System.err.println(e.toString());
-			return -1;
-		}
+        int[] wgSize;
+        int[] locSize;
+        
+        if (CLEngineConfig.isIMPL_LOCAL()) {
+        	wgSize = new int[]{matrixA.getRowCount(), matrixB.getRowCount()};
+        	locSize = null;
+        } else {
+    		try {
+    			List<int[]> niceSizes = SizeEstimator.getGoodSizes(matrixA.getRowCount(), matrixB.getRowCount(), (int) maxWorkGroupSize);
+    			wgSize = niceSizes.get(0);
+    			locSize = niceSizes.get(1);
+    		} catch (Exception e) {
+    			queue.flush();
+    			queue.release();
+    			multiplyMatrixKernel.release();
+    			program.release();
+    			clCache.free();
+    			
+    			System.err.println(e.toString());
+    			return -1;
+    		}        	
+        }
 
         // queue.finish();
-        CLEvent addEvt = multiplyMatrixKernel.enqueueNDRange(queue, niceSizes.get(0), niceSizes.get(1));
-        
+        CLEvent addEvt = null;
+        if (CLEngineConfig.isIMPL_LOCAL()) {
+        	addEvt = multiplyMatrixKernel.enqueueNDRange(queue, wgSize);
+        } else {
+        	addEvt = multiplyMatrixKernel.enqueueNDRange(queue, wgSize, locSize);
+        } 
        
         clCache.setPointerInteger("counter", clCache.getBufferInteger("cl_counter").read(queue, addEvt) );
         // Pointer<Float> matrixDataOut = Pointer.allocateFloats(matrixA.getRowCount()*matrixBToTranspose.getColCount()).order(byteOrder);

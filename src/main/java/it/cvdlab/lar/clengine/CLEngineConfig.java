@@ -16,6 +16,8 @@ final class CLEngineConfig {
             + ".forceGC";
     private static final String PROPERTY_USESHAREDCL = CLEngineConfig.class.getPackage().getName()
             + ".useSharedCL";
+    private static final String PROPERTY_USEIMPLLOCAL = CLEngineConfig.class.getPackage().getName()
+            + ".useNoLocalSize";
 	
     // 
 	private static int NNZ_WEIGHT = 3;
@@ -25,6 +27,7 @@ final class CLEngineConfig {
 	private static boolean USE_DEVICE_MEM = true;
 	private static boolean FORCE_GC = false;
 	private static boolean SHARED_CL = false;
+	private static boolean IMPL_LOCAL = false;
 	
 	static {
 		String nnzWeight = System.getProperty(PROPERTY_NNZWEIGHT);
@@ -34,6 +37,7 @@ final class CLEngineConfig {
 		String deviceMem = System.getProperty(PROPERTY_USEDEVICEMEM);
 		String forceGC = System.getProperty(PROPERTY_FORCEGC);
 		String sharedCL = System.getProperty(PROPERTY_USESHAREDCL);
+		String implLocal = System.getProperty(PROPERTY_USEIMPLLOCAL);
 		
 		if (nnzWeight != null) {
 			try{
@@ -76,6 +80,11 @@ final class CLEngineConfig {
 			SHARED_CL = Boolean.valueOf(sharedCL);
 			System.out.println(PROPERTY_USESHAREDCL+ ": " + SHARED_CL);			
 		}
+		
+		if (implLocal != null) {
+			IMPL_LOCAL = Boolean.valueOf(implLocal);
+			System.out.println(PROPERTY_USEIMPLLOCAL+ ": " + IMPL_LOCAL);			
+		}		
 	}
 
 	public static int getNNZ_WEIGHT() {
@@ -104,5 +113,9 @@ final class CLEngineConfig {
 
 	public static boolean isSHARED_CL() {
 		return SHARED_CL;
+	}
+
+	public static boolean isIMPL_LOCAL() {
+		return IMPL_LOCAL;
 	}
 }
