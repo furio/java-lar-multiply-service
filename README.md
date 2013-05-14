@@ -78,7 +78,7 @@ You can edit the pom.xml directly or pass arguments to Maven command line.
 > After a computation call the JVM garbage collector.
 
 ##### it.cvdlab.lar.clengine.useNoLocalSize
-> ( _default: false_ )
+> ( _default: true_ )
 >
 > Don't calculate local size, use the underlying OpenCL implementation sort it.
 

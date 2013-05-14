@@ -20,16 +20,13 @@ import com.nativelibs4java.opencl.CLException;
 import com.nativelibs4java.opencl.CLKernel;
 import com.nativelibs4java.opencl.CLMem;
 import com.nativelibs4java.opencl.CLMem.Usage;
-import com.nativelibs4java.opencl.CLPlatform.DeviceFeature;
 import com.nativelibs4java.opencl.CLProgram;
 import com.nativelibs4java.opencl.CLQueue;
-import com.nativelibs4java.opencl.JavaCL;
 import com.nativelibs4java.util.IOUtils;
 
 public final class MultiplyCL {
 	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(MultiplyCL.class);
-	private static final int COO_CL_TYPE_LEN = 3;
 	
 	public static synchronized CsrMatrix multiply(CsrMatrix matrixA, CsrMatrix matrixB, boolean forceCOO) {
 		// Js-like computation
@@ -93,7 +90,7 @@ public final class MultiplyCL {
 		@SuppressWarnings("rawtypes")
 		List<Pointer> pointersRelease = Lists.newArrayList();
 		
-		CLContext context = createContext();
+		CLContext context = KernelConfig.createContext();
 		
 		if (context == null) {
 			clearAllocatedCLObjects(buffersRelease);
@@ -134,13 +131,13 @@ public final class MultiplyCL {
         	pointersRelease.add(matB_data);
         }
         
-        copyToPointer(matrixA.getRowptr(), matA_rowptr);
-        copyToPointer(matrixA.getColdata(), matA_colindices);
-        copyToPointer(matrixB.getRowptr(), matB_rowptr);
-        copyToPointer(matrixB.getColdata(), matB_colindices);
+        PonterUtils.copyToPointer(matrixA.getRowptr(), matA_rowptr);
+        PonterUtils.copyToPointer(matrixA.getColdata(), matA_colindices);
+        PonterUtils.copyToPointer(matrixB.getRowptr(), matB_rowptr);
+        PonterUtils.copyToPointer(matrixB.getColdata(), matB_colindices);
         if (!isBinary) {
-        	copyToPointer(matrixA.getData(), matA_data);
-        	copyToPointer(matrixB.getData(), matB_data);
+        	PonterUtils.copyToPointer(matrixA.getData(), matA_data);
+        	PonterUtils.copyToPointer(matrixB.getData(), matB_data);
         }
         
         
@@ -259,7 +256,7 @@ public final class MultiplyCL {
         // Pointer<Float> matrixDataOut = Pointer.allocateFloats(matrixA.getRowCount()*matrixBToTranspose.getColCount()).order(byteOrder);
         // cl_output_data.read(queue, matrixDataOut, true, addEvt);
         
-        List<Float> listMatrixOut = copyFromPointerFloat(matrixDataOut);
+        List<Float> listMatrixOut = PonterUtils.copyFromPointerFloat(matrixDataOut);
         
         addEvt.release();
         queue.flush();
@@ -283,7 +280,7 @@ public final class MultiplyCL {
 		List<Pointer> pointersRelease = Lists.newArrayList();
 		
 		//
-		CLContext context = createContext();
+		CLContext context = KernelConfig.createContext();
 		
 		if (context == null) {
 			clearAllocatedCLObjects(buffersRelease);
@@ -329,20 +326,21 @@ public final class MultiplyCL {
         	pointersRelease.add(matB_data);
         }
         
-        copyToPointer(matrixA.getRowptr(), matA_rowptr);
-        copyToPointer(matrixA.getColdata(), matA_colindices);
-        copyToPointer(matrixB.getRowptr(), matB_rowptr);
-        copyToPointer(matrixB.getColdata(), matB_colindices);
+        PonterUtils.copyToPointer(matrixA.getRowptr(), matA_rowptr);
+        PonterUtils.copyToPointer(matrixA.getColdata(), matA_colindices);
+        PonterUtils.copyToPointer(matrixB.getRowptr(), matB_rowptr);
+        PonterUtils.copyToPointer(matrixB.getColdata(), matB_colindices);
         if (!isBinary) {
-        	copyToPointer(matrixA.getData(), matA_data);
-        	copyToPointer(matrixB.getData(), matB_data);
+        	PonterUtils.copyToPointer(matrixA.getData(), matA_data);
+        	PonterUtils.copyToPointer(matrixB.getData(), matB_data);
         }
         
         
         // CLBuffers
         CLBuffer<Integer> cl_counter = null, cl_matA_rowptr = null, cl_matA_colindices = null, cl_matB_rowptr = null, cl_matB_colindices = null;
         CLBuffer<Float> cl_matA_data = null, cl_matB_data = null;
-        CLBuffer<Float> cl_output_data = null;
+        CLBuffer<Integer> cl_output_data_x = null, cl_output_data_y = null;
+        CLBuffer<Float> cl_output_data_val = null;
         
         try {
         	// Always use device mem for the counter
@@ -364,8 +362,12 @@ public final class MultiplyCL {
             }
             
             // Output buffer
-            cl_output_data = context.createFloatBuffer(Usage.Output, nnzCount*COO_CL_TYPE_LEN); //float3
-            buffersRelease.add(cl_output_data);
+            cl_output_data_x = context.createIntBuffer(Usage.Output, nnzCount);
+            buffersRelease.add(cl_output_data_x);
+            cl_output_data_y = context.createIntBuffer(Usage.Output, nnzCount);
+            buffersRelease.add(cl_output_data_y);
+            cl_output_data_val = context.createFloatBuffer(Usage.Output, nnzCount);
+            buffersRelease.add(cl_output_data_val);            
         } catch (CLException e) {
         	queue.flush();
 			queue.release();
@@ -410,7 +412,9 @@ public final class MultiplyCL {
         			cl_matB_colindices,
         			cl_matB_data,
         			cl_counter,
-        			cl_output_data);
+        			cl_output_data_x,
+        			cl_output_data_y,
+        			cl_output_data_val);
         } else {
         	multiplyMatrixKernel = program.createKernel(KernelConfig.KERNEL_COO_FUN_SHORT);
         	multiplyMatrixKernel.setArgs(cl_matA_rowptr,
@@ -418,7 +422,9 @@ public final class MultiplyCL {
         			cl_matB_rowptr,
         			cl_matB_colindices,
         			cl_counter,
-        			cl_output_data);
+        			cl_output_data_x,
+        			cl_output_data_y,
+        			cl_output_data_val);
         }
         
         int[] wgSize;
@@ -454,12 +460,18 @@ public final class MultiplyCL {
         	addEvt = multiplyMatrixKernel.enqueueNDRange(queue, wgSize, locSize);
         }
        
-        Pointer<Float> matrixDataOut = cl_output_data.read(queue, addEvt);
-        pointersRelease.add(matrixDataOut);
+        Pointer<Integer> matrixDataOut_x = cl_output_data_x.read(queue, addEvt);
+        pointersRelease.add(matrixDataOut_x);
+        Pointer<Integer> matrixDataOut_y = cl_output_data_y.read(queue, addEvt);
+        pointersRelease.add(matrixDataOut_y);
+        Pointer<Float> matrixDataOut_val = cl_output_data_val.read(queue, addEvt);
+        pointersRelease.add(matrixDataOut_val);
         // Pointer<Float> matrixDataOut = Pointer.allocateFloats(matrixA.getRowCount()*matrixBToTranspose.getColCount()).order(byteOrder);
         // cl_output_data.read(queue, matrixDataOut, true, addEvt);
         
-        List<Float> listMatrixOut = copyFromPointerFloat(matrixDataOut);
+        List<Integer> listMatrixOut_x = PonterUtils.copyFromPointerInteger(matrixDataOut_x);
+        List<Integer> listMatrixOut_y = PonterUtils.copyFromPointerInteger(matrixDataOut_y);
+        List<Float> listMatrixOut_val = PonterUtils.copyFromPointerFloat(matrixDataOut_val);
 		
         addEvt.release();
         queue.flush();
@@ -470,7 +482,11 @@ public final class MultiplyCL {
 		clearAllocatedPTRObjects(pointersRelease);
 		context.release();
 		
-		return CsrMatrix.fromCOOArray(listMatrixOut, matrixA.getRowshape(), matrixBToTranspose.getColshape());
+//		System.out.println(listMatrixOut_x);
+//		System.out.println(listMatrixOut_y);
+//		System.out.println(listMatrixOut_val);
+		
+		return CsrMatrix.fromCOOArray(listMatrixOut_x, listMatrixOut_y, listMatrixOut_val, matrixA.getRowshape(), matrixBToTranspose.getColshape());
 	}
 	
 	@SuppressWarnings("unused")
@@ -481,7 +497,7 @@ public final class MultiplyCL {
 		List<Pointer> pointersRelease = Lists.newArrayList();
 		
 		//
-		CLContext context = createContext();
+		CLContext context = KernelConfig.createContext();
 		
 		if (context == null) {
 			clearAllocatedCLObjects(buffersRelease);
@@ -519,10 +535,10 @@ public final class MultiplyCL {
         matB_colindices = Pointer.allocateInts(matrixB.getColdata().size()).order(byteOrder);
         pointersRelease.add(matB_colindices);
         
-        copyToPointer(matrixA.getRowptr(), matA_rowptr);
-        copyToPointer(matrixA.getColdata(), matA_colindices);
-        copyToPointer(matrixB.getRowptr(), matB_rowptr);
-        copyToPointer(matrixB.getColdata(), matB_colindices);
+        PonterUtils.copyToPointer(matrixA.getRowptr(), matA_rowptr);
+        PonterUtils.copyToPointer(matrixA.getColdata(), matA_colindices);
+        PonterUtils.copyToPointer(matrixB.getRowptr(), matB_rowptr);
+        PonterUtils.copyToPointer(matrixB.getColdata(), matB_colindices);
         
         
         // CLBuffers
@@ -634,47 +650,6 @@ public final class MultiplyCL {
         return resultCount;
 	}
 	
-	private static CLContext createContext() {
-		CLContext context = null;
-		
-		try {
-			if ( CLEngineConfig.isFORCE_GPU() ) {
-				context = JavaCL.createBestContext(DeviceFeature.GPU);
-			} else {
-				context = JavaCL.createBestContext();
-			}
-		}  catch (CLException e) {
-			context = null;
-			System.err.println(e.toString());
-        }
-		
-		return context;
-	}
-	
-	
-	private static <T> void copyToPointer(List<T> iList, Pointer<T> oPointer) {
-		for(int i = 0; i < iList.size(); i++) {
-			oPointer.set(i, iList.get(i));
-		}
-	}
-	
-	@SuppressWarnings("unused")
-	private static <T extends Number> List<T> copyFromPointer(Pointer<T> lPointer) {
-		List<T> tmpList = Lists.newArrayList();
-		for(T singleData: lPointer) {
-			tmpList.add( singleData );
-		}
-		return Lists.newArrayList(tmpList);
-	}
-	
-	private static List<Float> copyFromPointerFloat(Pointer<Float> fPointer) {
-		List<Float> tmpList = Lists.newArrayList();
-		for(Float singleData: fPointer) {
-			tmpList.add( new Float(singleData) );
-		}
-		return Lists.newArrayList(tmpList);
-	}		
-	
 	private static void clearAllocatedCLObjects(List<CLMem> listOfObjects) {
 		System.err.println("Clearing CLMEM");
 		for(CLMem buffObject: listOfObjects) {
@@ -703,13 +678,13 @@ public final class MultiplyCL {
 		System.out.println(csrMatrixOne.multiply(csrMatrixTwo));
 		
 //		
-//		CsrMatrix result = multiply(csrMatrixOne, csrMatrixTwo);
+//		CsrMatrix result = multiply(csrMatrixOne, csrMatrixTwo, false);
 //		System.out.println(result);
 //		System.out.println(csrMatrixOne.multiply(csrMatrixTwo));
 ////		System.out.println(csrMatrixOne.transpose());
 //		System.out.println("==========");
 //		
-////		clMultiplyCOO(csrMatrixOne, csrMatrixTwo);
+//		System.out.println(clMultiplyCOO(csrMatrixOne, csrMatrixTwo, clCalcNNZ(csrMatrixOne, csrMatrixTwo)));
 ////		System.out.println(csrMatrixOne.multiply(csrMatrixTwo));
 //		
 ////		float[] ccoOutput = new float[]{0, 0, 2, 

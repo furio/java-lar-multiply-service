@@ -12,23 +12,18 @@ import org.bridj.Pointer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Lists;
-import com.nativelibs4java.opencl.CLContext;
 import com.nativelibs4java.opencl.CLDevice;
 import com.nativelibs4java.opencl.CLEvent;
 import com.nativelibs4java.opencl.CLException;
 import com.nativelibs4java.opencl.CLKernel;
 import com.nativelibs4java.opencl.CLMem.Usage;
-import com.nativelibs4java.opencl.CLPlatform.DeviceFeature;
 import com.nativelibs4java.opencl.CLProgram;
 import com.nativelibs4java.opencl.CLQueue;
-import com.nativelibs4java.opencl.JavaCL;
 import com.nativelibs4java.util.IOUtils;
 
 final class MultiplyCLCached {
 	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(MultiplyCLCached.class);
-	private static final int COO_CL_TYPE_LEN = 3;
 	
 	// Buffer identifier (TODO)
 	
@@ -37,6 +32,14 @@ final class MultiplyCLCached {
 		MultiplyCLStatus clCache = new MultiplyCLStatus();
 		clCache.setMatrixA(matrixA);
 		clCache.setMatrixB(matrixB);
+		
+		// Context
+		clCache.setContext( KernelConfig.createContext() );
+		
+		if (clCache.getContext() == null) {
+			clCache.free();
+			return null;    	
+        }		
 		
 		try {
 			clCache.setNnz( clCalcNNZ( clCache ) );
@@ -71,13 +74,6 @@ final class MultiplyCLCached {
 	private static CsrMatrix clMultiply(MultiplyCLStatus clCache) {
 		CsrMatrix matrixA = clCache.getMatrixA();
 		CsrMatrix matrixBToTranspose = clCache.getMatrixB();
-		
-		if (clCache.getContext() == null) {
-			clCache.free();
-
-			return null;    	
-        }
-		// Context
 
 		
 		// WorkGroupSize
@@ -103,8 +99,8 @@ final class MultiplyCLCached {
         }
 
         if (!isBinary) {
-        	copyToPointer(matrixA.getData(), clCache.getPointerFloat( "matA_data" ) );
-        	copyToPointer(matrixB.getData(), clCache.getPointerFloat( "matB_data" ) );
+        	PonterUtils.copyToPointer(matrixA.getData(), clCache.getPointerFloat( "matA_data" ) );
+        	PonterUtils.copyToPointer(matrixB.getData(), clCache.getPointerFloat( "matB_data" ) );
         }
         
         
@@ -209,7 +205,7 @@ final class MultiplyCLCached {
         // Pointer<Float> matrixDataOut = Pointer.allocateFloats(matrixA.getRowCount()*matrixBToTranspose.getColCount()).order(byteOrder);
         // cl_output_data.read(queue, matrixDataOut, true, addEvt);
         
-        List<Float> listMatrixOut = copyFromPointerFloat( clCache.getPointerFloat( "matrixDataOut") );
+        List<Float> listMatrixOut = PonterUtils.copyFromPointerFloat( clCache.getPointerFloat( "matrixDataOut") );
         
         addEvt.release();
         queue.flush();
@@ -228,13 +224,6 @@ final class MultiplyCLCached {
 		CsrMatrix matrixA = clCache.getMatrixA();
 		CsrMatrix matrixBToTranspose = clCache.getMatrixB();
 		int nnzCount = clCache.getNnz();
-		
-		if (clCache.getContext() == null) {
-			clCache.free();
-
-			return null;    	
-        }
-		// Context
 
 		
 		// WorkGroupSize
@@ -262,8 +251,8 @@ final class MultiplyCLCached {
         }
 
         if (!isBinary) {
-        	copyToPointer(matrixA.getData(), clCache.getPointerFloat( "matA_data" ) );
-        	copyToPointer(matrixB.getData(), clCache.getPointerFloat( "matB_data" ) );
+        	PonterUtils.copyToPointer(matrixA.getData(), clCache.getPointerFloat( "matA_data" ) );
+        	PonterUtils.copyToPointer(matrixB.getData(), clCache.getPointerFloat( "matB_data" ) );
         }
         
         
@@ -271,6 +260,8 @@ final class MultiplyCLCached {
         // CLBuffer<Integer> cl_counter = null, cl_matA_rowptr = null, cl_matA_colindices = null, cl_matB_rowptr = null, cl_matB_colindices = null;
         // CLBuffer<Float> cl_matA_data = null, cl_matB_data = null;
         // CLBuffer<Float> cl_output_data = null;
+        // CLBuffer<Integer> cl_output_data_x = null, cl_output_data_y = null;
+        // CLBuffer<Float> cl_output_data_val = null;
         
         try {
         	// Always use device mem for the counter
@@ -281,7 +272,9 @@ final class MultiplyCLCached {
             }
             
             // Output buffer
-            clCache.setBufferFloat( "cl_output_data", clCache.getContext().createFloatBuffer(Usage.Output, nnzCount*COO_CL_TYPE_LEN) );
+            clCache.setBufferInteger( "cl_output_data_x", clCache.getContext().createIntBuffer(Usage.Output, nnzCount) );
+            clCache.setBufferInteger( "cl_output_data_y", clCache.getContext().createIntBuffer(Usage.Output, nnzCount) );
+            clCache.setBufferFloat( "cl_output_data_val", clCache.getContext().createFloatBuffer(Usage.Output, nnzCount) );
         } catch (CLException e) {
         	queue.flush();
 			queue.release();
@@ -323,7 +316,9 @@ final class MultiplyCLCached {
         			clCache.getBufferInteger("cl_matB_colindices"),
         			clCache.getBufferFloat("cl_matB_data"),
         			clCache.getBufferInteger("cl_counter"),
-        			clCache.getBufferFloat("cl_output_data")
+        			clCache.getBufferInteger("cl_output_data_x"),
+        			clCache.getBufferInteger("cl_output_data_y"),
+        			clCache.getBufferFloat("cl_output_data_val")
         			);
         } else {
         	multiplyMatrixKernel = program.createKernel(KernelConfig.KERNEL_COO_FUN_SHORT);
@@ -333,7 +328,9 @@ final class MultiplyCLCached {
         			clCache.getBufferInteger("cl_matB_rowptr"),
         			clCache.getBufferInteger("cl_matB_colindices"),
         			clCache.getBufferInteger("cl_counter"),
-        			clCache.getBufferFloat("cl_output_data")
+        			clCache.getBufferInteger("cl_output_data_x"),
+        			clCache.getBufferInteger("cl_output_data_y"),
+        			clCache.getBufferFloat("cl_output_data_val")
         			);
         }
         
@@ -368,13 +365,16 @@ final class MultiplyCLCached {
         	addEvt = multiplyMatrixKernel.enqueueNDRange(queue, wgSize, locSize);
         }
         
-       
-        clCache.setPointerFloat( "matrixDataOut", clCache.getBufferFloat("cl_output_data").read(queue, addEvt) );
+        clCache.setPointerInteger( "matrixDataOut_x", clCache.getBufferInteger("cl_output_data_x").read(queue, addEvt) );
+        clCache.setPointerInteger( "matrixDataOut_y", clCache.getBufferInteger("cl_output_data_y").read(queue, addEvt) );
+        clCache.setPointerFloat( "matrixDataOut_val", clCache.getBufferFloat("cl_output_data_val").read(queue, addEvt) );
         // Pointer<Float> matrixDataOut = Pointer.allocateFloats(matrixA.getRowCount()*matrixBToTranspose.getColCount()).order(byteOrder);
         // cl_output_data.read(queue, matrixDataOut, true, addEvt);
         
-        List<Float> listMatrixOut = copyFromPointerFloat( clCache.getPointerFloat( "matrixDataOut") );
-		
+        List<Integer> listMatrixOut_x = PonterUtils.copyFromPointerInteger( clCache.getPointerInteger( "matrixDataOut_x") );
+        List<Integer> listMatrixOut_y = PonterUtils.copyFromPointerInteger( clCache.getPointerInteger( "matrixDataOut_y") );
+        List<Float> listMatrixOut_val = PonterUtils.copyFromPointerFloat( clCache.getPointerFloat( "matrixDataOut_val") );
+        
         addEvt.release();
         queue.flush();
         queue.release();
@@ -382,19 +382,10 @@ final class MultiplyCLCached {
 		program.release();
 		clCache.free();
 		
-		return CsrMatrix.fromCOOArray(listMatrixOut, matrixA.getRowshape(), matrixBToTranspose.getColshape());
+		return CsrMatrix.fromCOOArray(listMatrixOut_x, listMatrixOut_y, listMatrixOut_val, matrixA.getRowshape(), matrixBToTranspose.getColshape());
 	}
 	
-	private static int clCalcNNZ(MultiplyCLStatus clCache) {
-		// Context
-		clCache.setContext( createContext() );
-		
-		if (clCache.getContext() == null) {
-			clCache.free();
-
-			return -1;    	
-        }
-		
+	private static int clCalcNNZ(MultiplyCLStatus clCache) {		
 		// WorkGroupSize
 		long maxWorkGroupSize = Long.MAX_VALUE;
 		for(CLDevice currDev: clCache.getContext().getDevices() ) {
@@ -419,10 +410,10 @@ final class MultiplyCLCached {
         clCache.setPointerInteger( "matB_rowptr", Pointer.allocateInts(matrixB.getRowptr().size()).order(byteOrder) );
         clCache.setPointerInteger( "matB_colindices", Pointer.allocateInts(matrixB.getColdata().size()).order(byteOrder) );
         
-        copyToPointer(matrixA.getRowptr(), clCache.getPointerInteger("matA_rowptr") );
-        copyToPointer(matrixA.getColdata(), clCache.getPointerInteger("matA_colindices") );
-        copyToPointer(matrixB.getRowptr(), clCache.getPointerInteger("matB_rowptr") );
-        copyToPointer(matrixB.getColdata(), clCache.getPointerInteger("matB_colindices") );
+        PonterUtils.copyToPointer(matrixA.getRowptr(), clCache.getPointerInteger("matA_rowptr") );
+        PonterUtils.copyToPointer(matrixA.getColdata(), clCache.getPointerInteger("matA_colindices") );
+        PonterUtils.copyToPointer(matrixB.getRowptr(), clCache.getPointerInteger("matB_rowptr") );
+        PonterUtils.copyToPointer(matrixB.getColdata(), clCache.getPointerInteger("matB_colindices") );
         
         // CLBuffers
         try {
@@ -519,46 +510,5 @@ final class MultiplyCLCached {
 		clCache.releaseSinglePTR("counter");
         
         return resultCount;
-	}
-	
-	private static CLContext createContext() {
-		CLContext context = null;
-		
-		try {
-			if ( CLEngineConfig.isFORCE_GPU() ) {
-				context = JavaCL.createBestContext(DeviceFeature.GPU);
-			} else {
-				context = JavaCL.createBestContext();
-			}
-		}  catch (CLException e) {
-			context = null;
-			System.err.println(e.toString());
-        }
-		
-		return context;
-	}
-	
-	
-	private static <T> void copyToPointer(List<T> iList, Pointer<T> oPointer) {
-		for(int i = 0; i < iList.size(); i++) {
-			oPointer.set(i, iList.get(i));
-		}
-	}
-	
-	@SuppressWarnings("unused")
-	private static <T extends Number> List<T> copyFromPointer(Pointer<T> lPointer) {
-		List<T> tmpList = Lists.newArrayList();
-		for(T singleData: lPointer) {
-			tmpList.add( singleData );
-		}
-		return Lists.newArrayList(tmpList);
-	}
-	
-	private static List<Float> copyFromPointerFloat(Pointer<Float> fPointer) {
-		List<Float> tmpList = Lists.newArrayList();
-		for(Float singleData: fPointer) {
-			tmpList.add( new Float(singleData) );
-		}
-		return Lists.newArrayList(tmpList);
 	}
 }

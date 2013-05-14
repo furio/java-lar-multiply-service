@@ -27,7 +27,7 @@ final class CLEngineConfig {
 	private static boolean USE_DEVICE_MEM = true;
 	private static boolean FORCE_GC = false;
 	private static boolean SHARED_CL = false;
-	private static boolean IMPL_LOCAL = false;
+	private static boolean IMPL_LOCAL = true;
 	
 	static {
 		String nnzWeight = System.getProperty(PROPERTY_NNZWEIGHT);

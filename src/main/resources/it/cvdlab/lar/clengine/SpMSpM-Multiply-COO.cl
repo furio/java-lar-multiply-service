@@ -7,7 +7,8 @@ __kernel void spmm_coo_kernel_naive(
 	__global const float * restrict Adata,
 	__global const uint * restrict BrowPtr, __global const uint * restrict Bcols,
 	__global const float * restrict Bdata,
-    __global int * counter, __global float * cooVal) 
+    __global int * counter, 
+    __global int * cooArr_X, __global int * cooArr_Y, __global float * cooArr_Data) 
 {
 	int currRow = get_global_id(0);
 	int currCol = get_global_id(1);
@@ -46,9 +47,9 @@ __kernel void spmm_coo_kernel_naive(
 
 	if (localSum > 0) {
 		int localIndex = atomic_add(counter,1);
-		cooVal[localIndex*3 + 0] = (float)currRow;
-		cooVal[localIndex*3 + 1] = (float)currCol;
-		cooVal[localIndex*3 + 2] = localSum;
+		cooArr_X[localIndex] = currRow;
+		cooArr_Y[localIndex] = currCol;
+		cooArr_Data[localIndex] = localSum;
 		// printf("(%d,%d)[%d]: raS: %f\n", currRow, currCol, localIndex, localSum);
 	}
 }
@@ -56,7 +57,8 @@ __kernel void spmm_coo_kernel_naive(
 __kernel void spmm_coo_binary_kernel_naive(
 	__global const uint * restrict ArowPtr, __global const uint * restrict Acols,
 	__global const uint * restrict BrowPtr, __global const uint * restrict Bcols,
-    __global int * counter, __global float * cooVal) 
+    __global int * counter,
+    __global int * cooArr_X, __global int * cooArr_Y, __global float * cooArr_Data) 
 {
 	int currRow = get_global_id(0);
 	int currCol = get_global_id(1);
@@ -97,9 +99,9 @@ __kernel void spmm_coo_binary_kernel_naive(
 
 	if (localSum > 0) {
 		int localIndex = atomic_add(counter,1);
-		cooVal[localIndex*3 + 0] = (float)currRow;
-		cooVal[localIndex*3 + 1] = (float)currCol;
-		cooVal[localIndex*3 + 2] = localSum;
+		cooArr_X[localIndex] = currRow;
+		cooArr_Y[localIndex] = currCol;
+		cooArr_Data[localIndex] = localSum;
 		// printf("(%d,%d)[%d]: raS: %f\n", currRow, currCol, localIndex, localSum);
 	}
 }

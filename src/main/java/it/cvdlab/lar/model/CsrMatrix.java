@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.TreeSet;
 
-import org.apache.commons.lang.ArrayUtils;
 import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.annotate.JsonProperty;
 import org.slf4j.Logger;
@@ -148,7 +147,7 @@ public class CsrMatrix {
 		}
 
 		if ( USE_SPARSE_MULTIPLY ) {
-			return this.cooMultiply(matrix);
+			return this.sparseMultiply(matrix);
 		} else {
 			return this.denseMultiply(matrix);
 		}
@@ -208,114 +207,9 @@ public class CsrMatrix {
 		
 		return tmp_rowptr[tmp_rowcount];
 	}
-	
+
 	@JsonIgnore
 	private CsrMatrix sparseMultiply(CsrMatrix matrix) {
-		int i,j,k,l,count,countJD;
-		int[] JD = new int[matrix.getColCount()];
-		
-		int[] tmp_rowptr, tmp_coldata;
-		float[] tmp_data;
-		int tmp_rowcount = this.getRowCount(),
-				tmp_colcount = matrix.getColCount();
-		
-		// Init JD
-		for (i=0; i < tmp_colcount; ++i) {
-			JD[i] = -1;
-		}
-		
-		// Init rowPtr
-		tmp_rowptr = new int[tmp_rowcount + 1];
-		
-		// Calculate rowPtr
-		for(i = 0; i < tmp_rowcount; ++i) {
-			count = 0; 
-
-			for (k = this.getRowPointer().get(i); k < this.getRowPointer().get(i + 1); ++k) {
-				for (j = matrix.getRowPointer().get( this.getColdata().get(k) ); j < matrix.getRowPointer().get( this.getColdata().get(k) + 1 ); ++j) {
-					for (l=0; l<count; l++) {
-						if ( JD[l] == matrix.getColdata().get(j) ) {
-							break;
-						}
-					}
-
-					if ( l == count ) {
-						JD[count] = matrix.getColdata().get(j);
-						count++;
-					}
-				}
-			}
-
-			tmp_rowptr[i+1] = count;
-			for (j=0; j < count; ++j) {
-				JD[j] = -1;
-			}
-		}
-		
-		// Finally set
-		for ( i = 0; i < tmp_rowcount; ++i) { 
-			tmp_rowptr[i+1] += tmp_rowptr[i];
-		}
-		
-		// Init tmpColData
-		tmp_coldata = new int[tmp_rowptr[tmp_rowcount]];
-		
-		// These fors have a bug, at the first step inverts some column indexes
-		// need to be debugged
-		for (i=0; i < tmp_rowcount; ++i) {
-			countJD = 0;
-			count = tmp_rowptr[i];
-			for ( k = this.getRowPointer().get(i); k < this.getRowPointer().get(i + 1); ++k) {
-				for ( j = matrix.getRowPointer().get( this.getColdata().get(k) ); j < matrix.getRowPointer().get( this.getColdata().get(k) + 1 ); ++j) {
-					for ( l=0; l<countJD; l++) {
-						if ( JD[l] == matrix.getColdata().get(j) ) {
-							break;
-						}
-					}
-//					System.err.println("j:" + j + "("+matrix.getColdata().get(j)+") - l: " + l + " - countJD: " + countJD + " - count: " + count);
-//					System.err.println(Arrays.toString(JD));
-					if ( l == countJD ) {
-						tmp_coldata[count] = matrix.getColdata().get(j);
-						JD[countJD] = matrix.getColdata().get(j);
-						count++;
-						countJD++;
-					}
-					
-//					System.err.println("j:" + j + "("+matrix.getColdata().get(j)+") - l: " + l + " - countJD: " + countJD + " - count: " + count);
-//					System.err.println(Arrays.toString(JD));
-//					System.err.println("---");
-				}
-			}
-
-			for ( j=0; j < countJD; ++j) {
-				JD[j] = -1;
-			}
-			
-//			System.err.println("==");
-		}
-		
-		// Init data
-		tmp_data = new float[tmp_rowptr[tmp_rowcount]];
-		
-		for (i=0; i < tmp_rowcount; ++i) {
-			for (j = tmp_rowptr[i]; j < tmp_rowptr[i + 1]; ++j) {
-				tmp_data[j] = 0;
-				for ( k = this.getRowPointer().get(i); k < this.getRowPointer().get(i+1); ++k) {
-					for ( l = matrix.getRowPointer().get( this.getColdata().get(k) ); l < matrix.getRowPointer().get( this.getColdata().get(k) + 1 ); l++) {
-						if ( matrix.getColdata().get(l) == tmp_coldata[j] ) {
-							tmp_data[j] += this.getData().get(k) * matrix.getData().get(l);
-						} // end if
-					} // end for l
-				} // end for k
-			} // end for j
-		} // end for i
-  		
-		
-		return new CsrMatrix(tmp_rowptr, tmp_coldata, tmp_data, tmp_rowcount, tmp_colcount);
-	}
-
-	@JsonIgnore
-	private CsrMatrix cooMultiply(CsrMatrix matrix) {
 		CsrMatrix argMatrix = matrix.transpose();
 	    List<Float> resultList = Lists.newArrayList();
 
@@ -355,7 +249,6 @@ public class CsrMatrix {
 	            	resultList.add((float)j);
 	            	resultList.add(localSum);
 	            }
-	            
 			}
 		}
 
@@ -621,13 +514,38 @@ public class CsrMatrix {
 	}
 	
 	@JsonIgnore
-	public static CsrMatrix fromCOOArray(List<Float> cooArray, int rowshape, int colshape) {
-		return fromCOOArray(ArrayUtils.toPrimitive( cooArray.toArray(new Float[0]) ), rowshape, colshape); 
+	public static CsrMatrix fromCOOArray(float[] cooArray, int rowshape, int colshape) {
+		return fromCOOArray(Floats.asList(cooArray), rowshape, colshape); 
 	}
 	
 	@JsonIgnore
-	public static CsrMatrix fromCOOArray(float[] cooArray, int rowshape, int colshape) {
-		int nnz = cooArray.length / 3;
+	public static CsrMatrix fromCOOArray(List<Float> cooArray, int rowshape, int colshape) {
+		int nnz = cooArray.size() / 3;
+			
+		List<Integer> cooArray_x = Lists.newArrayListWithCapacity(nnz);
+		List<Integer> cooArray_y = Lists.newArrayListWithCapacity(nnz);
+		List<Float> cooArray_data = Lists.newArrayListWithCapacity(nnz);
+		
+		for(int i = 0; i < nnz; i++) {
+			cooArray_x.add( cooArray.get(i*3 + 0).intValue() );
+			cooArray_y.add( cooArray.get(i*3 + 1).intValue() );
+			cooArray_data.add( cooArray.get(i*3 + 2) );
+		}
+		
+		return fromCOOArray(cooArray_x,cooArray_y,cooArray_data,rowshape,colshape);
+	}
+
+	@JsonIgnore
+	public static CsrMatrix fromCOOArray(int[] xVal, int[] yVal, float[] dVal, 
+			int rowshape, int colshape) {
+		
+		return fromCOOArray( Ints.asList(xVal), Ints.asList(yVal), Floats.asList(dVal), rowshape, colshape );
+	}
+	
+	@JsonIgnore
+	public static CsrMatrix fromCOOArray(List<Integer> xVal, List<Integer> yVal, List<Float> dVal, 
+			int rowshape, int colshape) {
+		int nnz = xVal.size();
 		
 		List<Integer> rowptr = Lists.newArrayList(Collections.nCopies(rowshape+1, 0));
 		List<Integer> colIndex = Lists.newArrayList();
@@ -641,8 +559,8 @@ public class CsrMatrix {
 		float currData;
 		
 		for(int i = 0; i < nnz; i++) {
-			currRow = (int)cooArray[i*3 + 0];
-			currCol = (int)cooArray[i*3 + 1];
+			currRow = xVal.get(i);
+			currCol = yVal.get(i);
 			
 			rowptr.set( currRow + 1, rowptr.get(currRow + 1) + 1 );
 			for (int j = currRow + 2; j < rowptr.size(); j++) {
@@ -665,9 +583,9 @@ public class CsrMatrix {
 		data = Lists.newArrayList(Collections.nCopies(colIndex.size(), 0F));
 		
 		for(int i = 0; i < nnz; i++) {
-			currRow = (int)cooArray[i*3 + 0];
-			currCol = (int)cooArray[i*3 + 1];
-			currData = cooArray[i*3 + 2];
+			currRow = xVal.get(i);
+			currCol = yVal.get(i);
+			currData = dVal.get(i);
 			
 			int startIndex = rowptr.get(currRow);
 			int stopIndex = rowptr.get(currRow + 1);
@@ -680,7 +598,7 @@ public class CsrMatrix {
 		}
 		
 		return new CsrMatrix(rowptr,colIndex,data,rowshape,colshape);
-	}
+	}	
 	
 	@JsonIgnore
 	private static float[] binarydataInit(int length, float initValue) {
