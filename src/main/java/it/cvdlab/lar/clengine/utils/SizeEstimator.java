@@ -1,4 +1,4 @@
-package it.cvdlab.lar.clengine;
+package it.cvdlab.lar.clengine.utils;
 
 import it.cvdlab.lar.utils.FactorList;
 import it.cvdlab.lar.utils.PrimeSieve;
@@ -13,7 +13,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
 
-final class SizeEstimator {
+public final class SizeEstimator {
 	private static final Logger logger = LoggerFactory.getLogger(SizeEstimator.class);
 	
 	private static final int MINIMUM_DIVISORS = 2;

@@ -1,5 +1,7 @@
 package it.cvdlab.lar.clengine;
 
+import it.cvdlab.lar.clengine.utils.PonterUtils;
+import it.cvdlab.lar.clengine.utils.SizeEstimator;
 import it.cvdlab.lar.model.CsrMatrix;
 
 import java.io.IOException;

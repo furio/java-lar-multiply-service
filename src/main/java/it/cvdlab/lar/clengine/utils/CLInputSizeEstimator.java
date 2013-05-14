@@ -1,4 +1,4 @@
-package it.cvdlab.lar.clengine;
+package it.cvdlab.lar.clengine.utils;
 
 import it.cvdlab.lar.model.CsrMatrix;
 
