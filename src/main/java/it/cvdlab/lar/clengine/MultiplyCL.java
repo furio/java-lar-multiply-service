@@ -31,6 +31,13 @@ public final class MultiplyCL {
 	private static final Logger logger = LoggerFactory.getLogger(MultiplyCL.class);
 	
 	public static synchronized CsrMatrix multiply(CsrMatrix matrixA, CsrMatrix matrixB, boolean forceCOO) {
+		System.err.println("===");
+		System.err.println("A Res: " + matrixA.getRowCount() + "x" + matrixA.getColCount() + " NNz: " + matrixA.getColdata().size());
+		System.err.println("B Res: " + matrixB.getRowCount() + "x" + matrixB.getColCount() + " NNz: " + matrixB.getColdata().size());
+		long denseResult = matrixA.getRowCount();
+		denseResult *= (long)matrixB.getColCount();
+		System.err.println("Dim Res: " + denseResult);	
+		
 		// Js-like computation
 		if (CLEngineConfig.isNO_OPENCL()) {
 			System.err.println("== JS Multiply ==");
@@ -55,14 +62,10 @@ public final class MultiplyCL {
 			return null; 
 		}
 		
-		System.err.println("===");
-		System.err.println("A Res: " + matrixA.getRowPointer().size() + "-" + matrixA.getColdata().size());
-		System.err.println("B Res: " + matrixB.getRowPointer().size() + "-" + matrixB.getColdata().size());
-		System.err.println("Dim Res: " + matrixA.getRowCount() * matrixB.getColCount());
 		System.err.println("NNZ Res: " + nnzCount);
 		
 		CsrMatrix resultMatrix = null;
-		if ( forceCOO || CLEngineConfig.isUSECOO() || ((matrixA.getRowCount() * matrixB.getColCount()) > ( nnzCount * CLEngineConfig.getNNZ_WEIGHT() )) ) {
+		if ( forceCOO || CLEngineConfig.isUSECOO() || (denseResult > ( nnzCount * CLEngineConfig.getNNZ_WEIGHT() )) ) {
 			System.err.println("COO Way");
 			resultMatrix = clMultiplyCOO(matrixA, matrixB, nnzCount);
 		} else {

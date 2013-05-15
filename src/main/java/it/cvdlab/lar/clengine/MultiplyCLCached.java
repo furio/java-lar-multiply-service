@@ -30,6 +30,10 @@ final class MultiplyCLCached {
 	// Buffer identifier (TODO)
 	
 	static CsrMatrix multiply(CsrMatrix matrixA, CsrMatrix matrixB, boolean forceCOO) {
+		// Dense result
+		long denseResult = matrixA.getRowCount();
+		denseResult *= (long)matrixB.getColCount();
+		
 		// Init cache object
 		MultiplyCLStatus clCache = new MultiplyCLStatus();
 		clCache.setMatrixA(matrixA);
@@ -50,14 +54,10 @@ final class MultiplyCLCached {
 			return null; 
 		}
 		
-		System.err.println("===");
-		System.err.println("A Res: " + matrixA.getRowPointer().size() + "-" + matrixA.getColdata().size());
-		System.err.println("B Res: " + matrixB.getRowPointer().size() + "-" + matrixB.getColdata().size());
-		System.err.println("Dim Res: " + matrixA.getRowCount() * matrixB.getColCount());
 		System.err.println("NNZ Res: " + clCache.getNnz());
 		
 		CsrMatrix resultMatrix = null;
-		if ( forceCOO || CLEngineConfig.isUSECOO() || ((matrixA.getRowCount() * matrixB.getColCount()) > ( clCache.getNnz() * CLEngineConfig.getNNZ_WEIGHT() )) ) {
+		if ( forceCOO || CLEngineConfig.isUSECOO() || (denseResult > ( clCache.getNnz() * CLEngineConfig.getNNZ_WEIGHT() )) ) {
 			System.err.println("COO Way");
 			resultMatrix = clMultiplyCOO(clCache);
 		} else {

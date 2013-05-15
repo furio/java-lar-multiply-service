@@ -26,7 +26,7 @@ final class CLEngineConfig {
 	private static boolean FORCE_GPU = true;
 	private static boolean USE_DEVICE_MEM = true;
 	private static boolean FORCE_GC = false;
-	private static boolean SHARED_CL = false;
+	private static boolean SHARED_CL = true;
 	private static boolean IMPL_LOCAL = true;
 	
 	static {

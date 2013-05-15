@@ -3,6 +3,8 @@ package it.cvdlab.lar.rest;
 import it.cvdlab.lar.clengine.MultiplyCL;
 import it.cvdlab.lar.model.CsrMatrix;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URLDecoder;
 
@@ -102,6 +104,7 @@ public class RestService {
     
     
     private CsrMatrix computeProduct(MultivaluedMap<String, String> form, boolean forceCOO) {
+    	String matrixContent = null;
     	CsrMatrix firstMatrix = null;
     	CsrMatrix secondMatrix = null;
     	boolean firstParse = false;
@@ -111,7 +114,9 @@ public class RestService {
     	
     	if ( form.containsKey(MATRIX_FIRST_PARAM) ) {
     		try {
-    			firstMatrix = jacksonMapper.readValue( URLDecoder.decode(form.getFirst(MATRIX_FIRST_PARAM), "UTF-8"), CsrMatrix.class);
+    			matrixContent = URLDecoder.decode(form.getFirst(MATRIX_FIRST_PARAM), "UTF-8");
+    			// writeLogMatrix(MATRIX_FIRST_PARAM, matrixContent);
+    			firstMatrix = jacksonMapper.readValue(matrixContent, CsrMatrix.class);
     			firstParse = true;
 			} catch (JsonParseException e) {
 				System.err.println( e.toString() );
@@ -122,9 +127,13 @@ public class RestService {
 			}
     	}
     	
+    	matrixContent = null;
+    	
     	if ( form.containsKey(MATRIX_SECOND_PARAM) ) {
     		try {
-    			secondMatrix = jacksonMapper.readValue( URLDecoder.decode(form.getFirst(MATRIX_SECOND_PARAM), "UTF-8"), CsrMatrix.class);
+    			matrixContent = URLDecoder.decode(form.getFirst(MATRIX_SECOND_PARAM), "UTF-8");
+    			// writeLogMatrix(MATRIX_SECOND_PARAM, matrixContent);    			
+    			secondMatrix = jacksonMapper.readValue(matrixContent , CsrMatrix.class);
     			secondParse = true;
 			} catch (JsonParseException e) {
 				System.err.println( e.toString() );
@@ -137,11 +146,25 @@ public class RestService {
     	
     	CsrMatrix resultMatrix = null;
     	if ((firstMatrix != null) && (secondMatrix != null) && firstParse && secondParse) {
+    		System.err.println("Starting RESULT matrix..."); 
     		resultMatrix = MultiplyCL.multiply(firstMatrix, secondMatrix, forceCOO);
+    		System.err.println("Sending RESULT matrix..."); 
     	}
     	
         return resultMatrix;        	
     }
+    
+    private static void writeLogMatrix(String name, String content){
+        try {
+            FileWriter fw = new FileWriter(name + "." + System.currentTimeMillis() + ".log");
+            BufferedWriter bw = new BufferedWriter(fw);
+            bw.write(content);
+            bw.close();
+        } catch (IOException e) {
+            System.err.print("Unable to write to file " + name+ ".");
+            e.printStackTrace();
+        }
+    }    
 }
 
 /*
