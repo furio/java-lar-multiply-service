@@ -160,17 +160,17 @@ public class CsrMatrix {
 			throw new Exception("Current matrix columns are different from argument matrix rows");
 		}
 		
-		int i,j,k,l,count;
-		int[] JD = new int[matrix.getColCount()];
+
 		
 		int[] tmp_rowptr;
 		int tmp_rowcount = this.getRowCount(),
 				tmp_colcount = matrix.getColCount();
 		
+		int i,j,k,l,count;
+		int[] JD = new int[tmp_colcount];
+		
 		// Init JD
-		for (i=0; i < tmp_colcount; ++i) {
-			JD[i] = -1;
-		}
+		Arrays.fill(JD, -1);
 		
 		// Init rowPtr
 		tmp_rowptr = new int[tmp_rowcount + 1];

@@ -2,6 +2,8 @@
 #define MAXROW %%AROW%%
 #define MAXCOL %%BCOL%%
 
+// #pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
+
 __kernel void spmm_coo_kernel_naive(
 	__global const uint * restrict ArowPtr, __global const uint * restrict Acols,
 	__global const float * restrict Adata,

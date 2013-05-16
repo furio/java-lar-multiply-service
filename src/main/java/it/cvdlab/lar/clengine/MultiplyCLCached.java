@@ -77,7 +77,6 @@ final class MultiplyCLCached {
 		CsrMatrix matrixA = clCache.getMatrixA();
 		CsrMatrix matrixBToTranspose = clCache.getMatrixB();
 
-		
 		// WorkGroupSize
 		long maxWorkGroupSize = Long.MAX_VALUE;
 		for(CLDevice currDev: clCache.getContext().getDevices() ) {
@@ -89,6 +88,8 @@ final class MultiplyCLCached {
         
         CsrMatrix matrixB = matrixBToTranspose.transpose();
         boolean isBinary = matrixA.isBinary() && matrixB.isBinary();
+        
+        long startTime = System.currentTimeMillis();
         
         // Native memory
         // Pointer<Float> matA_data = null, matB_data = null;
@@ -217,6 +218,7 @@ final class MultiplyCLCached {
 		clCache.free();
         
 		// System.out.println(listMatrixOut);
+		System.err.println("Calculated in: " + (System.currentTimeMillis() - startTime) + " millis");
 		
 		return CsrMatrix.fromFlattenArray(ArrayUtils.toPrimitive( listMatrixOut.toArray(new Float[0]) ), matrixBToTranspose.getColCount());
 	}
@@ -239,6 +241,8 @@ final class MultiplyCLCached {
         
         CsrMatrix matrixB = matrixBToTranspose.transpose();
         boolean isBinary = matrixA.isBinary() && matrixB.isBinary();
+        
+        long startTime = System.currentTimeMillis();
         
         // Native memory
         // Pointer<Float> matA_data = null, matB_data = null;
@@ -384,6 +388,8 @@ final class MultiplyCLCached {
 		program.release();
 		clCache.free();
 		
+		System.err.println("Calculated in: " + (System.currentTimeMillis() - startTime) + " millis");
+		
 		return CsrMatrix.fromCOOArray(listMatrixOut_x, listMatrixOut_y, listMatrixOut_val, matrixA.getRowshape(), matrixBToTranspose.getColshape());
 	}
 	
@@ -399,6 +405,8 @@ final class MultiplyCLCached {
         
         CsrMatrix matrixA = clCache.getMatrixA();
         CsrMatrix matrixB = clCache.getMatrixB().transpose();
+        
+        long startTime = System.currentTimeMillis();
         
         // Native memory
         // counter, matA_rowptr, matA_colindices, matB_rowptr, matB_colindices;
@@ -510,6 +518,8 @@ final class MultiplyCLCached {
 		
 		clCache.releaseSingleCL("cl_counter");
 		clCache.releaseSinglePTR("counter");
+		
+		System.err.println("Calculated in: " + (System.currentTimeMillis() - startTime) + " millis");
         
         return resultCount;
 	}

@@ -83,7 +83,7 @@ You can edit the pom.xml directly or pass arguments to Maven command line.
 > Don't calculate local size, use the underlying OpenCL implementation sort it.
 
 ##### it.cvdlab.lar.clengine.useSharedCL
-> ( _default: true_ )
+> ( _default: false_ )
 >
 > Use the cached CL routines.
 

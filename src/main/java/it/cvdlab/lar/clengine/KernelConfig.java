@@ -20,6 +20,8 @@ final class KernelConfig {
 			System.err.println(e.toString());
         }
 		
+		System.err.println(context.toString());
+		
 		return context;
 	}
 	
@@ -27,6 +29,8 @@ final class KernelConfig {
 	private static final String KERNEL_DENSE_NOLOCAL = "SpMSpM-Multiply-Naive.nl.cl";
 	private static final String KERNEL_COO_LOCAL = "SpMSpM-Multiply-COO.cl";
 	private static final String KERNEL_COO_NOLOCAL = "SpMSpM-Multiply-COO.nl.cl";
+	private static final String KERNEL_COO_FLAT_LOCAL = "SpMSpM-MultiplyRow-COO.cl";
+	private static final String KERNEL_COO_FLAT_NOLOCAL = "SpMSpM-MultiplyRow-COO.nl.cl";	
 	private static final String KERNEL_NNZ_LOCAL = "NNZ-Calc.cl";
 	private static final String KERNEL_NNZ_NOLOCAL = "NNZ-Calc.nl.cl";
 	
@@ -43,6 +47,14 @@ final class KernelConfig {
 			return KERNEL_COO_NOLOCAL;
 		} else {
 			return KERNEL_COO_LOCAL;
+		}
+	}
+	
+	static final String KERNEL_COO_FLAT() {
+		if (CLEngineConfig.isIMPL_LOCAL()) {
+			return KERNEL_COO_FLAT_NOLOCAL;
+		} else {
+			return KERNEL_COO_FLAT_LOCAL;
 		}
 	}
 	
