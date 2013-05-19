@@ -542,6 +542,7 @@ public class CsrMatrix {
 		return fromCOOArray( Ints.asList(xVal), Ints.asList(yVal), Floats.asList(dVal), rowshape, colshape );
 	}
 	
+	/*
 	@JsonIgnore
 	public static CsrMatrix fromCOOArray(List<Integer> xVal, List<Integer> yVal, List<Float> dVal, 
 			int rowshape, int colshape) {
@@ -602,6 +603,62 @@ public class CsrMatrix {
 				}
 			}
 		}
+		
+		System.err.println("Converting COO to CSR... Done");
+		
+		return new CsrMatrix(rowptr,colIndex,data,rowshape,colshape);
+	}
+	*/
+	
+	@JsonIgnore
+	public static CsrMatrix fromCOOArray(List<Integer> xVal, List<Integer> yVal, List<Float> dVal, 
+			int rowshape, int colshape) {
+		System.err.println("Converting COO to CSR...");
+		int nnz = xVal.size();
+		
+		List<CooTriplet> unsorted = Lists.newArrayListWithExpectedSize(nnz);
+		for(int i = 0; i < nnz; i++) {
+			unsorted.add(new CooTriplet(xVal.get(i), yVal.get(i), dVal.get(i)));
+		}
+		
+		System.err.println("Converting COO to CSR... Java MergeSort");
+		Collections.sort(unsorted);
+		
+		List<Integer> rowptr = Lists.newArrayListWithExpectedSize(rowshape+1);
+		List<Integer> colIndex = Lists.newArrayListWithExpectedSize(nnz);
+		List<Float> data = Lists.newArrayListWithExpectedSize(nnz);
+
+		//
+		CooTriplet currTriplet;
+		int prevRow, currRow;
+		prevRow = 0;
+		rowptr.add(prevRow);
+		
+		System.err.println("Converting COO to CSR... Step 1");
+		for(int i = 0; i < nnz; i++) {
+			currTriplet = unsorted.get(i);
+			currRow = currTriplet.getX();
+			
+			colIndex.add(currTriplet.getY());
+			data.add(currTriplet.getVal());
+			
+			if (prevRow != currRow) {
+				for (int k = prevRow; k < currRow; k++) {
+					rowptr.add(i);
+				}
+				prevRow = currRow;
+			}
+		}
+		
+		if ( rowptr.size() < rowshape ) {
+			int fill = rowshape - rowptr.size();
+			for(int i = 0; i < fill; i++) {
+				rowptr.add(nnz);
+			}
+		}
+		
+		// Rowshape + 1
+		rowptr.add(nnz);
 		
 		System.err.println("Converting COO to CSR... Done");
 		

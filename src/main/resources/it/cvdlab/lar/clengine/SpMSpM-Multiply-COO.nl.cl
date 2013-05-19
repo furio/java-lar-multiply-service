@@ -14,10 +14,6 @@ __kernel void spmm_coo_kernel_naive(
 	int currRow = get_global_id(0);
 	int currCol = get_global_id(1);
 
-//	if( !((currRow < MAXROW) && (currCol < MAXCOL)) ) {
-//		return;
-//	}
-
 	int ArowCur = ArowPtr[currRow];
 	int ArowEnd = ArowPtr[currRow+1];
 	
@@ -62,10 +58,6 @@ __kernel void spmm_coo_binary_kernel_naive(
 {
 	int currRow = get_global_id(0);
 	int currCol = get_global_id(1);
-
-//	if( !((currRow < MAXROW) && (currCol < MAXCOL)) ) {
-//		return;
-//	}
 
 	int ArowCur = ArowPtr[currRow];
 	int ArowEnd = ArowPtr[currRow+1];

@@ -39,7 +39,8 @@ public final class MultiplyCL {
 		System.err.println("Dim Res: " + denseResult);	
 		
 		// Js-like computation
-		if (CLEngineConfig.isNO_OPENCL()) {
+		// TODO: There is a bug in which if A*B and B has 1 col OpenCL kernel compute strange stuff
+		if (CLEngineConfig.isNO_OPENCL() || (matrixB.getColCount() == 1)) {
 			System.err.println("== JS Multiply ==");
 			return jsMultiply(matrixA, matrixB);
 		}
@@ -56,7 +57,8 @@ public final class MultiplyCL {
 		
 		try {
 			nnzCount = matrixA.nnzMultiplyCount(matrixB);
-			// System.out.println("NNZCount: " + nnzCount );
+//			nnzCount = clCalcNNZ(matrixA,matrixB);
+//			System.out.println("NNZCount: " + nnzCount );
 		} catch (Exception e) {
 			logger.error(e.toString());
 			return null; 
@@ -684,7 +686,7 @@ public final class MultiplyCL {
     		}        	
         }
 
-        System.err.println(wgSize[0]);
+//        System.err.println(wgSize[0]);
         CLEvent addEvt = null;
         if (CLEngineConfig.isIMPL_LOCAL()) {
         	addEvt = multiplyMatrixKernel.enqueueNDRange(queue, wgSize);
@@ -914,7 +916,7 @@ public final class MultiplyCL {
 		System.out.println(csrMatrixTwo);
 		System.out.println(csrMatrixTwo.transpose());
 		System.out.println("==========");
-		System.out.println(csrMatrixOne.multiply(csrMatrixTwo));
+		System.out.println(csrMatrixOne.multiply(csrMatrixTwo));	
 		
 //		
 //		CsrMatrix result = multiply(csrMatrixOne, csrMatrixTwo, false);
@@ -923,8 +925,8 @@ public final class MultiplyCL {
 ////		System.out.println(csrMatrixOne.transpose());
 //		System.out.println("==========");
 //		
-		System.out.println(KernelConfig.KERNEL_COO_FLAT());
-		System.out.println(clMultiplyCOO_FLAT(csrMatrixOne, csrMatrixTwo, clCalcNNZ(csrMatrixOne, csrMatrixTwo)));
+//		System.out.println(KernelConfig.KERNEL_COO_FLAT());
+//		System.out.println(clMultiplyCOO_FLAT(csrMatrixOne, csrMatrixTwo, clCalcNNZ(csrMatrixOne, csrMatrixTwo)));
 //		System.out.println(csrMatrixOne.multiply(csrMatrixTwo));
 //		
 ////		float[] ccoOutput = new float[]{0, 0, 2, 

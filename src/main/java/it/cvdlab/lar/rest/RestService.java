@@ -20,6 +20,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriInfo;
 
+import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -51,7 +52,7 @@ public class RestService {
     @POST
     @Consumes({ MediaType.APPLICATION_FORM_URLENCODED })
     @Produces({ MediaType.APPLICATION_JSON })
-    public CsrMatrix doMultiply(@Context UriInfo uriInfo, MultivaluedMap<String, String> form) {
+    public CsrMatrix doMultiply(@Context UriInfo uriInfo, MultivaluedMap<String, String> form) throws JsonGenerationException, JsonMappingException, IOException {
     	// httpServletResponse.addHeader("Access-Control-Allow-Origin", "*");
     	logger.error("/execute");
     	return computeProduct(form, false);
@@ -61,7 +62,7 @@ public class RestService {
     @POST
     @Consumes({ MediaType.APPLICATION_FORM_URLENCODED })
     @Produces({ MediaType.APPLICATION_JSON })
-    public CsrMatrix doMultiplyCOO(@Context UriInfo uriInfo, MultivaluedMap<String, String> form) {
+    public CsrMatrix doMultiplyCOO(@Context UriInfo uriInfo, MultivaluedMap<String, String> form) throws JsonGenerationException, JsonMappingException, IOException {
     	// httpServletResponse.addHeader("Access-Control-Allow-Origin", "*");
     	logger.error("/executeCOO");
     	return computeProduct(form, true);
@@ -103,7 +104,7 @@ public class RestService {
     }
     
     
-    private CsrMatrix computeProduct(MultivaluedMap<String, String> form, boolean forceCOO) {
+    private CsrMatrix computeProduct(MultivaluedMap<String, String> form, boolean forceCOO) throws JsonGenerationException, JsonMappingException, IOException {
     	String matrixContent = null;
     	CsrMatrix firstMatrix = null;
     	CsrMatrix secondMatrix = null;
@@ -115,7 +116,7 @@ public class RestService {
     	if ( form.containsKey(MATRIX_FIRST_PARAM) ) {
     		try {
     			matrixContent = URLDecoder.decode(form.getFirst(MATRIX_FIRST_PARAM), "UTF-8");
-    			// writeLogMatrix(MATRIX_FIRST_PARAM, matrixContent);
+    			writeLogMatrix(MATRIX_FIRST_PARAM, matrixContent);
     			firstMatrix = jacksonMapper.readValue(matrixContent, CsrMatrix.class);
     			firstParse = true;
 			} catch (JsonParseException e) {
@@ -132,7 +133,7 @@ public class RestService {
     	if ( form.containsKey(MATRIX_SECOND_PARAM) ) {
     		try {
     			matrixContent = URLDecoder.decode(form.getFirst(MATRIX_SECOND_PARAM), "UTF-8");
-    			// writeLogMatrix(MATRIX_SECOND_PARAM, matrixContent);    			
+    			writeLogMatrix(MATRIX_SECOND_PARAM, matrixContent);    			
     			secondMatrix = jacksonMapper.readValue(matrixContent , CsrMatrix.class);
     			secondParse = true;
 			} catch (JsonParseException e) {
@@ -148,6 +149,7 @@ public class RestService {
     	if ((firstMatrix != null) && (secondMatrix != null) && firstParse && secondParse) {
     		System.err.println("Starting RESULT matrix..."); 
     		resultMatrix = MultiplyCL.multiply(firstMatrix, secondMatrix, forceCOO);
+    		writeLogMatrix("result", jacksonMapper.writeValueAsString(resultMatrix));   
     		System.err.println("Sending RESULT matrix..."); 
     	}
     	
