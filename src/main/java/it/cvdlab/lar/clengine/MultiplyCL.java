@@ -1,7 +1,7 @@
 package it.cvdlab.lar.clengine;
 
-import it.cvdlab.lar.clengine.utils.PonterUtils;
-import it.cvdlab.lar.clengine.utils.SizeEstimator;
+import it.cvdlab.lar.clengine.utils.PointerUtils;
+import it.cvdlab.lar.clengine.utils.worksize.SizeEstimator;
 import it.cvdlab.lar.model.CsrMatrix;
 
 import java.io.IOException;
@@ -141,13 +141,13 @@ public final class MultiplyCL {
         	pointersRelease.add(matB_data);
         }
         
-        PonterUtils.copyToPointer(matrixA.getRowptr(), matA_rowptr);
-        PonterUtils.copyToPointer(matrixA.getColdata(), matA_colindices);
-        PonterUtils.copyToPointer(matrixB.getRowptr(), matB_rowptr);
-        PonterUtils.copyToPointer(matrixB.getColdata(), matB_colindices);
+        PointerUtils.copyToPointer(matrixA.getRowptr(), matA_rowptr);
+        PointerUtils.copyToPointer(matrixA.getColdata(), matA_colindices);
+        PointerUtils.copyToPointer(matrixB.getRowptr(), matB_rowptr);
+        PointerUtils.copyToPointer(matrixB.getColdata(), matB_colindices);
         if (!isBinary) {
-        	PonterUtils.copyToPointer(matrixA.getData(), matA_data);
-        	PonterUtils.copyToPointer(matrixB.getData(), matB_data);
+        	PointerUtils.copyToPointer(matrixA.getData(), matA_data);
+        	PointerUtils.copyToPointer(matrixB.getData(), matB_data);
         }
         
         
@@ -266,7 +266,7 @@ public final class MultiplyCL {
         // Pointer<Float> matrixDataOut = Pointer.allocateFloats(matrixA.getRowCount()*matrixBToTranspose.getColCount()).order(byteOrder);
         // cl_output_data.read(queue, matrixDataOut, true, addEvt);
         
-        List<Float> listMatrixOut = PonterUtils.copyFromPointerFloat(matrixDataOut);
+        List<Float> listMatrixOut = PointerUtils.copyFromPointerFloat(matrixDataOut);
         
         addEvt.release();
         queue.flush();
@@ -339,13 +339,13 @@ public final class MultiplyCL {
         	pointersRelease.add(matB_data);
         }
         
-        PonterUtils.copyToPointer(matrixA.getRowptr(), matA_rowptr);
-        PonterUtils.copyToPointer(matrixA.getColdata(), matA_colindices);
-        PonterUtils.copyToPointer(matrixB.getRowptr(), matB_rowptr);
-        PonterUtils.copyToPointer(matrixB.getColdata(), matB_colindices);
+        PointerUtils.copyToPointer(matrixA.getRowptr(), matA_rowptr);
+        PointerUtils.copyToPointer(matrixA.getColdata(), matA_colindices);
+        PointerUtils.copyToPointer(matrixB.getRowptr(), matB_rowptr);
+        PointerUtils.copyToPointer(matrixB.getColdata(), matB_colindices);
         if (!isBinary) {
-        	PonterUtils.copyToPointer(matrixA.getData(), matA_data);
-        	PonterUtils.copyToPointer(matrixB.getData(), matB_data);
+        	PointerUtils.copyToPointer(matrixA.getData(), matA_data);
+        	PointerUtils.copyToPointer(matrixB.getData(), matB_data);
         }
         
         
@@ -483,9 +483,9 @@ public final class MultiplyCL {
         // Pointer<Float> matrixDataOut = Pointer.allocateFloats(matrixA.getRowCount()*matrixBToTranspose.getColCount()).order(byteOrder);
         // cl_output_data.read(queue, matrixDataOut, true, addEvt);
         
-        List<Integer> listMatrixOut_x = PonterUtils.copyFromPointerInteger(matrixDataOut_x);
-        List<Integer> listMatrixOut_y = PonterUtils.copyFromPointerInteger(matrixDataOut_y);
-        List<Float> listMatrixOut_val = PonterUtils.copyFromPointerFloat(matrixDataOut_val);
+        List<Integer> listMatrixOut_x = PointerUtils.copyFromPointerInteger(matrixDataOut_x);
+        List<Integer> listMatrixOut_y = PointerUtils.copyFromPointerInteger(matrixDataOut_y);
+        List<Float> listMatrixOut_val = PointerUtils.copyFromPointerFloat(matrixDataOut_val);
 		
         addEvt.release();
         queue.flush();
@@ -560,13 +560,13 @@ public final class MultiplyCL {
         	pointersRelease.add(matB_data);
         }
         
-        PonterUtils.copyToPointer(matrixA.getRowptr(), matA_rowptr);
-        PonterUtils.copyToPointer(matrixA.getColdata(), matA_colindices);
-        PonterUtils.copyToPointer(matrixB.getRowptr(), matB_rowptr);
-        PonterUtils.copyToPointer(matrixB.getColdata(), matB_colindices);
+        PointerUtils.copyToPointer(matrixA.getRowptr(), matA_rowptr);
+        PointerUtils.copyToPointer(matrixA.getColdata(), matA_colindices);
+        PointerUtils.copyToPointer(matrixB.getRowptr(), matB_rowptr);
+        PointerUtils.copyToPointer(matrixB.getColdata(), matB_colindices);
         if (!isBinary) {
-        	PonterUtils.copyToPointer(matrixA.getData(), matA_data);
-        	PonterUtils.copyToPointer(matrixB.getData(), matB_data);
+        	PointerUtils.copyToPointer(matrixA.getData(), matA_data);
+        	PointerUtils.copyToPointer(matrixB.getData(), matB_data);
         }
         
         
@@ -703,9 +703,9 @@ public final class MultiplyCL {
         // Pointer<Float> matrixDataOut = Pointer.allocateFloats(matrixA.getRowCount()*matrixBToTranspose.getColCount()).order(byteOrder);
         // cl_output_data.read(queue, matrixDataOut, true, addEvt);
         
-        List<Integer> listMatrixOut_x = PonterUtils.copyFromPointerInteger(matrixDataOut_x);
-        List<Integer> listMatrixOut_y = PonterUtils.copyFromPointerInteger(matrixDataOut_y);
-        List<Float> listMatrixOut_val = PonterUtils.copyFromPointerFloat(matrixDataOut_val);
+        List<Integer> listMatrixOut_x = PointerUtils.copyFromPointerInteger(matrixDataOut_x);
+        List<Integer> listMatrixOut_y = PointerUtils.copyFromPointerInteger(matrixDataOut_y);
+        List<Float> listMatrixOut_val = PointerUtils.copyFromPointerFloat(matrixDataOut_val);
 		
         addEvt.release();
         queue.flush();
@@ -773,10 +773,10 @@ public final class MultiplyCL {
         matB_colindices = Pointer.allocateInts(matrixB.getColdata().size()).order(byteOrder);
         pointersRelease.add(matB_colindices);
         
-        PonterUtils.copyToPointer(matrixA.getRowptr(), matA_rowptr);
-        PonterUtils.copyToPointer(matrixA.getColdata(), matA_colindices);
-        PonterUtils.copyToPointer(matrixB.getRowptr(), matB_rowptr);
-        PonterUtils.copyToPointer(matrixB.getColdata(), matB_colindices);
+        PointerUtils.copyToPointer(matrixA.getRowptr(), matA_rowptr);
+        PointerUtils.copyToPointer(matrixA.getColdata(), matA_colindices);
+        PointerUtils.copyToPointer(matrixB.getRowptr(), matB_rowptr);
+        PointerUtils.copyToPointer(matrixB.getColdata(), matB_colindices);
         
         
         // CLBuffers

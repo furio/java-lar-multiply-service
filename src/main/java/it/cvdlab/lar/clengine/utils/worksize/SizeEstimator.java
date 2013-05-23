@@ -1,4 +1,4 @@
-package it.cvdlab.lar.clengine.utils;
+package it.cvdlab.lar.clengine.utils.worksize;
 
 import it.cvdlab.lar.utils.FactorList;
 import it.cvdlab.lar.utils.PrimeSieve;
@@ -18,8 +18,20 @@ public final class SizeEstimator {
 	
 	private static final int MINIMUM_DIVISORS = 2;
 	private static final int MAXIMUM_TRIES = 20;
+
+	private static int[] calcGoodVectorSize(final int bound, final int vectorSize) throws SizeEstimatorException {
+
+		int newBound = bound;
+		
+		if(newBound%vectorSize != 0) {
+			newBound = (int) (bound * Math.ceil(bound/vectorSize));
+		}
+		
+		return new int[]{newBound,vectorSize};
+	}
 	
-	private static int[] getGoodSingleSize(final int bound, final int maxBound, int minimumDivisors, int maximumTries) throws Exception {
+	
+	private static int[] calcGoodSingleSize(final int bound, final int maxBound, int minimumDivisors, int maximumTries) throws SizeEstimatorException {
 		// To filter divisor list
 		Predicate<Integer> currFilter = new Predicate<Integer>() {
 	        @Override
@@ -56,14 +68,19 @@ public final class SizeEstimator {
 			i += 1;
 		}
 		
-		throw new Exception("Cannot find a suitable couple of divisors!");
+		throw new SizeEstimatorException("Cannot find a suitable couple of divisors!");
 	}	
 
-	private static int[] getGoodSingleSize(int bound, int maxBound) throws Exception {
-		return getGoodSingleSize(bound, maxBound, MINIMUM_DIVISORS, MAXIMUM_TRIES);
+	private static int[] calcGoodSingleSize(int bound, int maxBound) throws SizeEstimatorException {
+		return calcGoodSingleSize(bound, maxBound, MINIMUM_DIVISORS, MAXIMUM_TRIES);
 	}
 	
-	public static List<int[]> getGoodSizes(int sizeX, int sizeY, int boundSize) throws Exception {
+	public static List<int[]> getGoodSizes(int sizeX, int sizeY, int boundSize) throws SizeEstimatorException {
+		if ((sizeX == 0) || (sizeY == 0)) {
+			throw new SizeEstimatorException("Cannot use a 0 size");
+		}
+		
+		
 		int maxSqrt = (int) Math.ceil( Math.sqrt(boundSize) );
 		logger.info("Calculating sizes ... [" + sizeX + "," + sizeY + "] Bound: [" + boundSize + "," + maxSqrt + "]");
 		
@@ -71,9 +88,29 @@ public final class SizeEstimator {
 			return Lists.newArrayList(new int[]{sizeX, sizeY}, new int[]{sizeX, sizeY});
 		}
 		
-		int[] newX = getGoodSingleSize(sizeX, maxSqrt);
-		int[] newY = getGoodSingleSize(sizeY, maxSqrt);
+		int[] newX = calcGoodSingleSize(sizeX, maxSqrt);
+		int[] newY = calcGoodSingleSize(sizeY, maxSqrt);
 		
 		return Lists.newArrayList(new int[]{newX[0], newY[0]}, new int[]{newX[1], newY[1]});
 	}
+	
+	public static List<int[]> getGoodVectorSize(int sizeX, int boundSize, SizeEnum vector) throws SizeEstimatorException {
+		if (sizeX == 0) {
+			throw new SizeEstimatorException("Cannot use a 0 size");
+		}
+		
+		if (vector.getVectorsize() > boundSize) {
+			throw new SizeEstimatorException("Cannot use a vector size bigger than the bound size");
+		}
+		
+		logger.info("Calculating sizes ... [" + sizeX + "] Bound: [" + boundSize + "] Vector: ["+ vector.getVectorsize() +"]");
+		
+		if ( sizeX < vector.getVectorsize() ) {
+			return Lists.newArrayList(new int[]{sizeX}, new int[]{sizeX});
+		}
+		
+		int[] newX = calcGoodVectorSize(sizeX, vector.getVectorsize());
+		
+		return Lists.newArrayList(new int[]{newX[0]}, new int[]{newX[1]});
+	}	
 }

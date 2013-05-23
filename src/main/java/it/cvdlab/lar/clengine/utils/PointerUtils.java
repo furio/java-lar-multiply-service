@@ -6,7 +6,7 @@ import org.bridj.Pointer;
 
 import com.google.common.collect.Lists;
 
-public final class PonterUtils {
+public final class PointerUtils {
 	public static <T> void copyToPointer(List<T> iList, Pointer<T> oPointer) {
 		for(int i = 0; i < iList.size(); i++) {
 			oPointer.set(i, iList.get(i));

@@ -1,8 +1,8 @@
 package it.cvdlab.lar.clengine;
 
 
-import it.cvdlab.lar.clengine.utils.PonterUtils;
-import it.cvdlab.lar.clengine.utils.SizeEstimator;
+import it.cvdlab.lar.clengine.utils.PointerUtils;
+import it.cvdlab.lar.clengine.utils.worksize.SizeEstimator;
 import it.cvdlab.lar.model.CsrMatrix;
 
 import java.io.IOException;
@@ -102,8 +102,8 @@ final class MultiplyCLCached {
         }
 
         if (!isBinary) {
-        	PonterUtils.copyToPointer(matrixA.getData(), clCache.getPointerFloat( "matA_data" ) );
-        	PonterUtils.copyToPointer(matrixB.getData(), clCache.getPointerFloat( "matB_data" ) );
+        	PointerUtils.copyToPointer(matrixA.getData(), clCache.getPointerFloat( "matA_data" ) );
+        	PointerUtils.copyToPointer(matrixB.getData(), clCache.getPointerFloat( "matB_data" ) );
         }
         
         
@@ -208,7 +208,7 @@ final class MultiplyCLCached {
         // Pointer<Float> matrixDataOut = Pointer.allocateFloats(matrixA.getRowCount()*matrixBToTranspose.getColCount()).order(byteOrder);
         // cl_output_data.read(queue, matrixDataOut, true, addEvt);
         
-        List<Float> listMatrixOut = PonterUtils.copyFromPointerFloat( clCache.getPointerFloat( "matrixDataOut") );
+        List<Float> listMatrixOut = PointerUtils.copyFromPointerFloat( clCache.getPointerFloat( "matrixDataOut") );
         
         addEvt.release();
         queue.flush();
@@ -257,8 +257,8 @@ final class MultiplyCLCached {
         }
 
         if (!isBinary) {
-        	PonterUtils.copyToPointer(matrixA.getData(), clCache.getPointerFloat( "matA_data" ) );
-        	PonterUtils.copyToPointer(matrixB.getData(), clCache.getPointerFloat( "matB_data" ) );
+        	PointerUtils.copyToPointer(matrixA.getData(), clCache.getPointerFloat( "matA_data" ) );
+        	PointerUtils.copyToPointer(matrixB.getData(), clCache.getPointerFloat( "matB_data" ) );
         }
         
         
@@ -377,9 +377,9 @@ final class MultiplyCLCached {
         // Pointer<Float> matrixDataOut = Pointer.allocateFloats(matrixA.getRowCount()*matrixBToTranspose.getColCount()).order(byteOrder);
         // cl_output_data.read(queue, matrixDataOut, true, addEvt);
         
-        List<Integer> listMatrixOut_x = PonterUtils.copyFromPointerInteger( clCache.getPointerInteger( "matrixDataOut_x") );
-        List<Integer> listMatrixOut_y = PonterUtils.copyFromPointerInteger( clCache.getPointerInteger( "matrixDataOut_y") );
-        List<Float> listMatrixOut_val = PonterUtils.copyFromPointerFloat( clCache.getPointerFloat( "matrixDataOut_val") );
+        List<Integer> listMatrixOut_x = PointerUtils.copyFromPointerInteger( clCache.getPointerInteger( "matrixDataOut_x") );
+        List<Integer> listMatrixOut_y = PointerUtils.copyFromPointerInteger( clCache.getPointerInteger( "matrixDataOut_y") );
+        List<Float> listMatrixOut_val = PointerUtils.copyFromPointerFloat( clCache.getPointerFloat( "matrixDataOut_val") );
         
         addEvt.release();
         queue.flush();
@@ -420,10 +420,10 @@ final class MultiplyCLCached {
         clCache.setPointerInteger( "matB_rowptr", Pointer.allocateInts(matrixB.getRowptr().size()).order(byteOrder) );
         clCache.setPointerInteger( "matB_colindices", Pointer.allocateInts(matrixB.getColdata().size()).order(byteOrder) );
         
-        PonterUtils.copyToPointer(matrixA.getRowptr(), clCache.getPointerInteger("matA_rowptr") );
-        PonterUtils.copyToPointer(matrixA.getColdata(), clCache.getPointerInteger("matA_colindices") );
-        PonterUtils.copyToPointer(matrixB.getRowptr(), clCache.getPointerInteger("matB_rowptr") );
-        PonterUtils.copyToPointer(matrixB.getColdata(), clCache.getPointerInteger("matB_colindices") );
+        PointerUtils.copyToPointer(matrixA.getRowptr(), clCache.getPointerInteger("matA_rowptr") );
+        PointerUtils.copyToPointer(matrixA.getColdata(), clCache.getPointerInteger("matA_colindices") );
+        PointerUtils.copyToPointer(matrixB.getRowptr(), clCache.getPointerInteger("matB_rowptr") );
+        PointerUtils.copyToPointer(matrixB.getColdata(), clCache.getPointerInteger("matB_colindices") );
         
         // CLBuffers
         try {
