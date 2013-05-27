@@ -6,18 +6,9 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.codehaus.jackson.map.ObjectMapper;
-
-import com.nativelibs4java.opencl.CLContext;
-import com.nativelibs4java.opencl.CLDevice;
-import com.nativelibs4java.opencl.CLKernel;
-import com.nativelibs4java.opencl.CLProgram;
-import com.nativelibs4java.opencl.JavaCL;
-import com.nativelibs4java.opencl.CLPlatform.DeviceFeature;
-import com.nativelibs4java.util.IOUtils;
 
 final class TestClass {
 	// CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE

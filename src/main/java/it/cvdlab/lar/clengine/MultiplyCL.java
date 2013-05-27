@@ -284,6 +284,7 @@ public final class MultiplyCL {
 	}
 	
 	
+	@SuppressWarnings("unused")
 	private static CsrMatrix clMultiplyCOO(CsrMatrix matrixA, CsrMatrix matrixBToTranspose, int nnzCount) {
 		// Lista di CL buffer da deallocare
 		List<CLMem> buffersRelease = Lists.newArrayList();
