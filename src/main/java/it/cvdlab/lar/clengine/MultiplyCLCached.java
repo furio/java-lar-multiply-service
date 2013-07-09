@@ -1,6 +1,8 @@
 package it.cvdlab.lar.clengine;
 
 
+import it.cvdlab.lar.clengine.utils.CLEngineConfig;
+import it.cvdlab.lar.clengine.utils.KernelConfig;
 import it.cvdlab.lar.clengine.utils.PointerUtils;
 import it.cvdlab.lar.clengine.utils.worksize.SizeEstimator;
 import it.cvdlab.lar.model.CsrMatrix;

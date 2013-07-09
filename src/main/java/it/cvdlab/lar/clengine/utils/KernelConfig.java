@@ -1,12 +1,13 @@
-package it.cvdlab.lar.clengine;
+package it.cvdlab.lar.clengine.utils;
+
 
 import com.nativelibs4java.opencl.CLContext;
 import com.nativelibs4java.opencl.CLException;
 import com.nativelibs4java.opencl.JavaCL;
 import com.nativelibs4java.opencl.CLPlatform.DeviceFeature;
 
-final class KernelConfig {
-	static CLContext createContext() {
+public final class KernelConfig {
+	public static CLContext createContext() {
 		CLContext context = null;
 		
 		try {
@@ -34,7 +35,7 @@ final class KernelConfig {
 	private static final String KERNEL_NNZ_LOCAL = "NNZ-Calc.cl";
 	private static final String KERNEL_NNZ_NOLOCAL = "NNZ-Calc.nl.cl";
 	
-	static final String KERNEL_DENSE() {
+	public static final String KERNEL_DENSE() {
 		if (CLEngineConfig.isIMPL_LOCAL()) {
 			return KERNEL_DENSE_NOLOCAL;
 		} else {
@@ -42,7 +43,7 @@ final class KernelConfig {
 		}
 	}
 	
-	static final String KERNEL_COO() {
+	public static final String KERNEL_COO() {
 		if (CLEngineConfig.isIMPL_LOCAL()) {
 			return KERNEL_COO_NOLOCAL;
 		} else {
@@ -50,7 +51,7 @@ final class KernelConfig {
 		}
 	}
 	
-	static final String KERNEL_COO_FLAT() {
+	public static final String KERNEL_COO_FLAT() {
 		if (CLEngineConfig.isIMPL_LOCAL()) {
 			return KERNEL_COO_FLAT_NOLOCAL;
 		} else {
@@ -58,7 +59,7 @@ final class KernelConfig {
 		}
 	}
 	
-	static final String KERNEL_NNZ() {
+	public static final String KERNEL_NNZ() {
 		if (CLEngineConfig.isIMPL_LOCAL()) {
 			return KERNEL_NNZ_NOLOCAL;
 		} else {
@@ -66,12 +67,12 @@ final class KernelConfig {
 		}
 	}	
 	
-	static final String KERNEL_DENSE_FUN_FULL = "spmm_kernel_naive";
-	static final String KERNEL_DENSE_FUN_SHORT = "spmm_binary_kernel_naive";
-	static final String KERNEL_COO_FUN_FULL = "spmm_coo_kernel_naive";
-	static final String KERNEL_COO_FUN_SHORT = "spmm_coo_binary_kernel_naive";
-	static final String KERNEL_NNZ_FUN = "nnz_calc_kernel";
+	public static final String KERNEL_DENSE_FUN_FULL = "spmm_kernel_naive";
+	public static final String KERNEL_DENSE_FUN_SHORT = "spmm_binary_kernel_naive";
+	public static final String KERNEL_COO_FUN_FULL = "spmm_coo_kernel_naive";
+	public static final String KERNEL_COO_FUN_SHORT = "spmm_coo_binary_kernel_naive";
+	public static final String KERNEL_NNZ_FUN = "nnz_calc_kernel";
 	
-	static final String DEFINE_ROW = "%%AROW%%";
-	static final String DEFINE_COL = "%%BCOL%%";
+	public static final String DEFINE_ROW = "%%AROW%%";
+	public static final String DEFINE_COL = "%%BCOL%%";
 }

@@ -1,6 +1,6 @@
-package it.cvdlab.lar.clengine;
+package it.cvdlab.lar.clengine.utils;
 
-final class CLEngineConfig {
+public final class CLEngineConfig {
 	// String settings
     private static final String PROPERTY_NNZWEIGHT = CLEngineConfig.class.getPackage().getName()
             + ".nnzWeight";
