@@ -23,10 +23,10 @@ public final class CLEngineConfig {
 	private static int NNZ_WEIGHT = 3;
 	private static boolean USECOO = false;
 	private static boolean NO_OPENCL = false;
-	private static boolean FORCE_GPU = false;
+	private static boolean FORCE_GPU = true;
 	private static boolean USE_DEVICE_MEM = true;
 	private static boolean FORCE_GC = false;
-	private static boolean SHARED_CL = true;
+	private static boolean SHARED_CL = false;
 	private static boolean IMPL_LOCAL = true;
 	
 	static {

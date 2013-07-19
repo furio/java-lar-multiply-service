@@ -43,12 +43,16 @@ public class CsrMatrix {
 		this.colshape = colshape;
 	}
 	
-	public CsrMatrix(int rowPtr[], int[] colData, float[] data, int rowshape, int colshape) {
+	public CsrMatrix(int[] rowPtr, int[] colData, float[] data, int rowshape, int colshape) {
 		this( Ints.asList(rowPtr), Ints.asList(colData), Floats.asList( data ), rowshape, colshape);
 	}
 	
-	public CsrMatrix(int rowPtr[], int[] colData, int rowshape, int colshape) {
-		this( rowPtr, colData, binarydataInit(colData.length, 1F) , rowshape, colshape);
+	public CsrMatrix(List<Integer> rowPtr, List<Integer> colData, int rowshape, int colshape) {
+		this( rowPtr, colData, Floats.asList( binarydataInit(colData.size(), 1F)  ), rowshape, colshape);
+	}	
+	
+	public CsrMatrix(int[] rowPtr, int[] colData, int rowshape, int colshape) {
+		this( Ints.asList(rowPtr), Ints.asList(colData), rowshape, colshape);
 	}	
 	
 	@JsonIgnore
@@ -538,78 +542,9 @@ public class CsrMatrix {
 		return fromCOOArray( Ints.asList(xVal), Ints.asList(yVal), Floats.asList(dVal), rowshape, colshape );
 	}
 	
-	/*
 	@JsonIgnore
-	public static CsrMatrix fromCOOArray(List<Integer> xVal, List<Integer> yVal, List<Float> dVal, 
-			int rowshape, int colshape) {
-		System.err.println("Converting COO to CSR...");
-		int nnz = xVal.size();
-		
-		List<Integer> rowptr = Lists.newArrayList(Collections.nCopies(rowshape+1, 0));
-		List<Integer> colIndex = Lists.newArrayList();
-		List<Float> data = null;
-		
-		//
-		Map<Integer,NavigableSet<Integer>> columnsData = Maps.newHashMap();
-		
-		//
-		int currRow, currCol;
-		float currData;
-		
-		System.err.println("Converting COO to CSR... Step 1");
-		for(int i = 0; i < nnz; i++) {
-			currRow = xVal.get(i);
-			currCol = yVal.get(i);
-			
-			rowptr.set( currRow + 1, rowptr.get(currRow + 1) + 1 );
-			for (int j = currRow + 2; j < rowptr.size(); j++) {
-				rowptr.set( j, rowptr.get(j) + 1 );
-			}
-			
-			if (columnsData.get(currRow) == null) {
-				columnsData.put(currRow, new TreeSet<Integer>());
-			}
-			
-			columnsData.get(currRow).add(currCol);
-		}
-		
-		System.err.println("Converting COO to CSR... Step 2");
-		
-		for(int i = 0; i < rowshape; i++) {
-			if (columnsData.get(i) != null) {
-				colIndex.addAll( Lists.newArrayList( columnsData.get(i).iterator() ) );
-			}
-		}
-		
-		data = Lists.newArrayList(Collections.nCopies(colIndex.size(), 0F));
-		
-		System.err.println("Converting COO to CSR... Step 3");
-		
-		for(int i = 0; i < nnz; i++) {
-			currRow = xVal.get(i);
-			currCol = yVal.get(i);
-			currData = dVal.get(i);
-			
-			int startIndex = rowptr.get(currRow);
-			int stopIndex = rowptr.get(currRow + 1);
-			
-			for (int j = startIndex; j < stopIndex; j++) {
-				if (colIndex.get(j) == currCol) {
-					data.set(j, currData);
-				}
-			}
-		}
-		
-		System.err.println("Converting COO to CSR... Done");
-		
-		return new CsrMatrix(rowptr,colIndex,data,rowshape,colshape);
-	}
-	*/
-	
-	@JsonIgnore
-	public static CsrMatrix fromCOOArray(List<Integer> xVal, List<Integer> yVal, List<Float> dVal, 
-			int rowshape, int colshape) {
-		System.err.println("Converting COO to CSR...");
+	public static CsrMatrix fromCOOArray(List<Integer> xVal, List<Integer> yVal, List<Float> dVal, int rowshape, int colshape) {
+		// System.err.println("Converting COO to CSR...");
 		int nnz = xVal.size();
 		
 		List<CooTriplet> unsorted = Lists.newArrayListWithExpectedSize(nnz);
@@ -617,7 +552,7 @@ public class CsrMatrix {
 			unsorted.add(new CooTriplet(xVal.get(i), yVal.get(i), dVal.get(i)));
 		}
 		
-		System.err.println("Converting COO to CSR... Java MergeSort");
+		// System.err.println("Converting COO to CSR... Java MergeSort");
 		Collections.sort(unsorted);
 		
 		List<Integer> rowptr = Lists.newArrayListWithExpectedSize(rowshape+1);
@@ -630,7 +565,7 @@ public class CsrMatrix {
 		prevRow = 0;
 		rowptr.add(prevRow);
 		
-		System.err.println("Converting COO to CSR... Step 1");
+		// System.err.println("Converting COO to CSR... Step 1");
 		for(int i = 0; i < nnz; i++) {
 			currTriplet = unsorted.get(i);
 			currRow = currTriplet.getX();
@@ -656,7 +591,7 @@ public class CsrMatrix {
 		// Rowshape + 1
 		rowptr.add(nnz);
 		
-		System.err.println("Converting COO to CSR... Done");
+		// System.err.println("Converting COO to CSR... Done");
 		
 		return new CsrMatrix(rowptr,colIndex,data,rowshape,colshape);
 	}	
